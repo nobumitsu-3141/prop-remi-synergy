@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>プロポフォール–レミフェンタニル 相乗効果ナビ｜離島麻酔ツールキット</title>
+<meta name="description" content="プロポフォールとレミフェンタニルの相乗効果（応答曲面・Greco モデル）を可視化する麻酔教育ツール。">
+<meta name="theme-color" content="#0c111b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="相乗ナビ">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  :root{
+    --ink:#0c111b; --surface:#141b29; --elev:#1c2536; --line:#2a3550;
+    --txt:#e9eef7; --muted:#93a1b8; --dim:#6c7b95;
+    --teal:#2dd4bf; --violet:#a78bfa; --amber:#f5a524; --rose:#fb7185; --green:#34d399; --red:#ef4444;
+    --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
+    --ui:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--ink);color:var(--txt);font-family:var(--ui);-webkit-text-size-adjust:100%}
+  body{line-height:1.5;padding-bottom:calc(40px + env(safe-area-inset-bottom))}
+  .wrap{max-width:960px;margin:0 auto;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  header{border-bottom:1px solid var(--line);padding:12px 0;padding-top:calc(12px + env(safe-area-inset-top));position:sticky;top:0;background:#0c111b;z-index:20}
+  .brand{display:flex;flex-direction:column;line-height:1.15}
+  .brand b{font-size:15px;letter-spacing:.02em}
+  .brand span{font-size:11px;color:var(--dim);font-family:var(--mono)}
+  main{padding-top:16px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .card h3{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+  .sub{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:14px 0 8px}
+
+  .seg{display:flex;flex-wrap:wrap;gap:6px;background:transparent}
+  .seg button{background:var(--elev);border:1px solid var(--line);color:var(--muted);font-family:var(--ui);font-size:12.5px;font-weight:600;padding:9px 13px;min-height:40px;cursor:pointer;border-radius:9px;-webkit-tap-highlight-color:transparent}
+  .seg button[aria-pressed="true"]{color:#06231f}
+  .seg.preset button{background:var(--elev);border-color:var(--line);color:var(--muted)}
+  .seg.preset button:active{border-color:var(--teal);color:var(--teal)}
+
+  .layout{display:grid;grid-template-columns:1.25fr 1fr;gap:14px}
+  @media(max-width:760px){.layout{grid-template-columns:1fr}}
+  canvas{display:block;width:100%;height:clamp(300px,58vw,440px);background:#0a0f18;border:1px solid var(--line);border-radius:12px;touch-action:none;cursor:crosshair;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+
+  .sliders{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;margin-top:14px}
+  @media(max-width:520px){.sliders{grid-template-columns:1fr}}
+  .sl .top{display:flex;justify-content:space-between;align-items:baseline}
+  .sl label{font-size:12px;color:var(--muted)}
+  .sl .v{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+  .sl .v small{color:var(--dim);font-weight:500;font-size:11px;margin-left:2px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;background:var(--line);outline:none;margin-top:10px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--teal);cursor:pointer;border:4px solid #0c111b;box-shadow:0 0 0 1px var(--line)}
+  input[type=range].r::-webkit-slider-thumb{background:var(--violet)}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--teal);border:4px solid #0c111b}
+  input[type=range].r::-moz-range-thumb{background:var(--violet)}
+
+  .verdict{background:var(--elev);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:10px}
+  .verdict .lab{font-size:11px;color:var(--muted);letter-spacing:.04em}
+  .verdict .row{display:flex;align-items:baseline;gap:8px;margin-top:2px}
+  .verdict .big{font-family:var(--mono);font-size:38px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .verdict .unit{font-size:13px;color:var(--dim)}
+  .verdict .stat{font-size:12px;font-weight:600;margin-top:8px;display:flex;align-items:center;gap:6px}
+  .verdict .dot{width:9px;height:9px;border-radius:50%;flex:none}
+
+  .ep{background:var(--elev);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:9px;position:relative;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .ep::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c)}
+  .ep[aria-pressed="true"]{outline:2px solid var(--c);outline-offset:-1px}
+  .ep .row{display:flex;justify-content:space-between;align-items:center}
+  .ep .name{font-size:12.5px;color:var(--txt)}
+  .ep .p{font-family:var(--mono);font-size:28px;font-weight:800;color:var(--c);font-variant-numeric:tabular-nums;line-height:1}
+  .ep .bar{height:5px;border-radius:3px;background:#0c1320;margin-top:8px;overflow:hidden}
+  .ep .bar i{display:block;height:100%;background:var(--c);border-radius:3px;transition:width .12s linear}
+
+  .syn{background:linear-gradient(135deg,#101d2a,#13202c);border:1px solid #244154;border-radius:12px;padding:14px;margin-top:4px}
+  .syn h4{font-size:11px;color:#8fb6c9;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+  .synrow{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0}
+  .synrow .l{color:var(--muted)}
+  .synrow .n{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums}
+  .synrow.tot{border-top:1px solid #244154;margin-top:6px;padding-top:8px}
+  .synrow.tot .l{color:var(--txt);font-weight:600}
+  .synrow.gain .l{color:#8fb6c9}
+  .synrow.gain .n{color:var(--green)}
+
+  .legend{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+  .grad{height:10px;width:150px;border-radius:5px;background:linear-gradient(90deg,#0c1926,#15545a,#2dd4bf);border:1px solid var(--line)}
+  .legend .iso{display:inline-flex;align-items:center;gap:5px}
+  .legend .iso i{display:inline-block;width:16px;height:0;border-top:2px solid #fff}
+  .legend .iso i.d{border-top-style:dashed}
+
+  details.refbox{margin-top:6px}
+  details.refbox summary{font-size:11px;color:var(--muted);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;list-style:none;padding:4px 0}
+  details.refbox summary::-webkit-details-marker{display:none}
+  details.refbox summary::before{content:"▸ ";color:var(--teal)}
+  details.refbox[open] summary::before{content:"▾ "}
+  .ref{font-size:11px;color:var(--dim);line-height:1.7}
+  .ref b{color:var(--muted)}
+  .note{font-size:12px;color:var(--muted);line-height:1.6}
+  .disc{background:#3a1d1d;border:1px solid #7f3030;border-radius:11px;padding:11px 13px;font-size:11.5px;color:#ffd9d9;line-height:1.6;margin-top:14px}
+  .disc b{color:#ffb3b3}
+  @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="brand"><b>プロポフォール–レミフェンタニル 相乗効果ナビ</b><span>GOTO ANESTHESIA TOOLKIT · RESPONSE SURFACE</span></div></div></header>
+
+<main class="wrap">
+  <div class="card">
+    <h3>表示する応答曲面（エンドポイント）</h3>
+    <div class="seg" id="epSeg"></div>
+    <p class="note" style="margin-top:8px">明るいほど「その刺激に無反応の確率」が高い領域。曲面上をクリック／ドラッグ、またはスライダーで効果部位濃度（Ce）の動作点を設定できます。</p>
+
+    <div class="sub">動作点プリセット（教育用の例）</div>
+    <div class="seg preset" id="presetSeg"></div>
+
+    <div class="layout" style="margin-top:16px">
+      <div>
+        <canvas id="cv"></canvas>
+        <div class="legend">
+          <span>無反応確率</span><span class="grad"></span><span>低 → 高</span>
+          <span class="iso"><i></i>95% isobole</span><span class="iso"><i class="d"></i>50% isobole</span>
+        </div>
+        <div class="sliders">
+          <div class="sl">
+            <div class="top"><label for="cp">プロポフォール Ce</label><span class="v"><span id="cpV">3.5</span><small>µg/mL</small></span></div>
+            <input id="cp" type="range" min="0" max="12" step="0.1" value="3.5" oninput="fromSlider()">
+          </div>
+          <div class="sl">
+            <div class="top"><label for="cr">レミフェンタニル Ce</label><span class="v"><span id="crV">4.0</span><small>ng/mL</small></span></div>
+            <input id="cr" class="r" type="range" min="0" max="16" step="0.1" value="4" oninput="fromSlider()">
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="verdict" id="verdict">
+          <div class="lab" id="vLab">選択した刺激への無反応確率（動作点）</div>
+          <div class="row"><span class="big" id="vBig">—</span><span class="unit">無反応確率</span></div>
+          <div class="stat"><span class="dot" id="vDot"></span><span id="vStat">—</span></div>
+        </div>
+        <div id="epList"></div>
+        <div class="syn">
+          <h4 id="synTitle">相乗効果（動作点）</h4>
+          <div class="synrow"><span class="l">プロポフォール単独</span><span class="n" id="synP" style="color:var(--teal)">—</span></div>
+          <div class="synrow"><span class="l">レミフェンタニル単独</span><span class="n" id="synR" style="color:var(--violet)">—</span></div>
+          <div class="synrow"><span class="l">相加（相乗なしの理論値 α=0）</span><span class="n" id="synAdd" style="color:var(--dim)">—</span></div>
+          <div class="synrow tot"><span class="l">併用（相乗あり）</span><span class="n" id="synBoth">—</span></div>
+          <div class="synrow gain"><span class="l">相乗による上乗せ</span><span class="n" id="synGain">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <details class="refbox"><summary>モデルと文献</summary>
+      <p class="ref">Greco モデル：効果 = U<sup>n</sup>/(U<sup>n</sup>+1)、U = C<sub>P</sub>/C50<sub>P</sub> + C<sub>R</sub>/C50<sub>R</sub> + α·(C<sub>P</sub>/C50<sub>P</sub>)(C<sub>R</sub>/C50<sub>R</sub>)。「相加（相乗なし）」は同じ式で α=0 とした理論値で、その差が相乗による上乗せを表します。パラメータは <b>Kern SE, et al.</b> <i>Anesthesiology</i> 2004;100:1373 ／ <b>Johnson KB, et al.</b> <i>Anesth Analg</i> 2008;106:471（検証）より：意識消失 C50p2.2/C50r33.1/n5.0/α3.6、喉頭鏡 5.6/48.9/2.2/33.2、電気テタヌス 4.6/23.1/6.0/14.7、圧痛 4.2/8.8/8.3/8.2。モデル形：<b>Greco WR</b> <i>Pharmacol Rev</i> 1995；<b>Minto CF</b> <i>Anesthesiology</i> 2000。</p>
+    </details>
+    <div class="disc"><b>注意：</b>母集団薬力学モデルに基づく確率推定で、個々の患者の反応・併用薬(ベンゾ等)・侵襲度の差を保証しません。プリセットは概念理解のための例であり投与量の推奨ではありません。臨床的観察(BIS・体動・自律神経反応)と併せて判断してください。Ce は薬物動態モデル依存です。</div>
+  </div>
+  <p class="note" style="text-align:center;color:var(--dim);font-size:11px;margin-top:-4px">オフライン対応 · ホーム画面に追加して全画面アプリとして使用できます</p>
+</main>
+
+<script>
+  var EP = {
+    lor:    {name:'意識消失 (無反応 OAA/S<2)', c50p:2.2, c50r:33.1, n:5.0, a:3.6,  color:'#2dd4bf'},
+    laryng: {name:'喉頭鏡・挿管に無反応',        c50p:5.6, c50r:48.9, n:2.2, a:33.2, color:'#a78bfa'},
+    tetany: {name:'電気テタヌス(皮切相当)に無反応', c50p:4.6, c50r:23.1, n:6.0, a:14.7, color:'#f5a524'},
+    algo:   {name:'圧痛(術後痛相当)に無反応',      c50p:4.2, c50r:8.8,  n:8.3, a:8.2,  color:'#fb7185'}
+  };
+  var order=['lor','laryng','tetany','algo'];
+  var sel='laryng';
+  var CPMAX=12, CRMAX=16;
+  var PRESETS=[
+    {n:'浅い(覚醒域近く)',cp:1.5,cr:2.0},
+    {n:'バランス維持',     cp:3.0,cr:4.0},
+    {n:'挿管刺激に対応',   cp:4.0,cr:6.0},
+    {n:'レミ偏重(Pro節約)',cp:2.0,cr:9.0},
+    {n:'Pro偏重(低オピオイド)',cp:5.5,cr:1.5}
+  ];
+  function $(id){return document.getElementById(id);}
+
+  // Greco response surface (with synergy)
+  function prob(cp,cr,e){ var up=cp/e.c50p, ur=cr/e.c50r; var U=up+ur+e.a*up*ur; if(U<=0)return 0; var Un=Math.pow(U,e.n); return Un/(Un+1); }
+  // additive reference (alpha = 0, no synergy)
+  function probAdd(cp,cr,e){ var up=cp/e.c50p, ur=cr/e.c50r; var U=up+ur; if(U<=0)return 0; var Un=Math.pow(U,e.n); return Un/(Un+1); }
+
+  // build endpoint selector + list + presets
+  (function init(){
+    var seg='';
+    order.forEach(function(k){ seg+='<button data-k="'+k+'" style="--c:'+EP[k].color+';background:'+EP[k].color+'22;border-color:'+EP[k].color+'66;color:'+EP[k].color+'" aria-pressed="'+(k===sel)+'" onclick="setSel(\''+k+'\')">'+EP[k].name+'</button>'; });
+    $('epSeg').innerHTML=seg;
+    var pre='';
+    PRESETS.forEach(function(p,i){ pre+='<button onclick="setPoint('+p.cp+','+p.cr+')">'+p.n+'</button>'; });
+    $('presetSeg').innerHTML=pre;
+    var list='';
+    order.forEach(function(k){ list+='<div class="ep" style="--c:'+EP[k].color+'" data-k="'+k+'" aria-pressed="'+(k===sel)+'" onclick="setSel(\''+k+'\')">'+
+      '<div class="row"><span class="name">'+EP[k].name+'</span><span class="p" id="p_'+k+'">—</span></div>'+
+      '<div class="bar"><i id="bar_'+k+'" style="width:0%"></i></div></div>'; });
+    $('epList').innerHTML=list;
+  })();
+
+  function setSel(k){ sel=k;
+    document.querySelectorAll('#epSeg button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-k')===k);});
+    document.querySelectorAll('#epList .ep').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-k')===k);});
+    render();
+  }
+  function setPoint(cp,cr){ $('cp').value=cp.toFixed(1); $('cr').value=cr.toFixed(1); render(); }
+
+  // ---- canvas ----
+  var pad={l:54,r:14,t:14,b:40};
+  function dpi(cv){ var ratio=window.devicePixelRatio||1, w=cv.clientWidth, h=cv.clientHeight;
+    cv.width=Math.round(w*ratio); cv.height=Math.round(h*ratio); var c=cv.getContext('2d'); c.setTransform(ratio,0,0,ratio,0,0); return {c:c,w:w,h:h}; }
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function colr(p){ var s0=[12,25,38],s1=[21,84,90],s2=[45,212,191],c;
+    if(p<0.5){var t=p/0.5;c=[lerp(s0[0],s1[0],t),lerp(s0[1],s1[1],t),lerp(s0[2],s1[2],t)];}
+    else{var t=(p-0.5)/0.5;c=[lerp(s1[0],s2[0],t),lerp(s1[1],s2[1],t),lerp(s1[2],s2[2],t)];}
+    return 'rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')'; }
+
+  var curCp=3.5, curCr=4.0, rafPending=false;
+  function scheduleDraw(){ if(rafPending)return; rafPending=true; requestAnimationFrame(function(){ rafPending=false; draw(curCp,curCr,EP[sel]); }); }
+
+  function render(){
+    var cp=Number($('cp').value), cr=Number($('cr').value);
+    curCp=cp; curCr=cr;
+    $('cpV').textContent=cp.toFixed(1); $('crV').textContent=cr.toFixed(1);
+    var e=EP[sel];
+
+    // endpoint readouts
+    order.forEach(function(k){ var pr=prob(cp,cr,EP[k]); $('p_'+k).textContent=Math.round(pr*100)+'%'; $('bar_'+k).style.width=(pr*100)+'%'; });
+
+    // verdict (selected endpoint at operating point)
+    var pB=prob(cp,cr,e), pct=Math.round(pB*100);
+    $('vLab').textContent=e.name+'（動作点）';
+    $('vBig').textContent=pct+'%'; $('vBig').style.color=e.color;
+    var st,col;
+    if(pB>=0.95){st='95%以上 — この刺激に無反応の可能性が高い';col='var(--green)';}
+    else if(pB>=0.5){st='50–95% — 効果が不十分な可能性あり';col='var(--amber)';}
+    else{st='50%未満 — 反応する可能性が高い';col='var(--rose)';}
+    $('vStat').textContent=st; $('vStat').style.color=col; $('vDot').style.background=col;
+
+    // synergy box
+    $('synTitle').textContent='相乗効果（'+e.name+'）';
+    var pP=prob(cp,0,e), pR=prob(0,cr,e), pAdd=probAdd(cp,cr,e);
+    var gain=Math.max(0,pB-pAdd);
+    $('synP').textContent=Math.round(pP*100)+'%'; $('synR').textContent=Math.round(pR*100)+'%';
+    $('synAdd').textContent=Math.round(pAdd*100)+'%';
+    $('synBoth').textContent=Math.round(pB*100)+'%'; $('synBoth').style.color=e.color;
+    $('synGain').textContent='+'+Math.round(gain*100)+' pt';
+
+    scheduleDraw();
+  }
+
+  function draw(cp,cr,e){
+    var cv=$('cv'); var s=dpi(cv), c=s.c, W=s.w, H=s.h;
+    c.clearRect(0,0,W,H);
+    var pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
+    var xOf=function(v){return pad.l+(v/CPMAX)*pw;};
+    var yOf=function(v){return pad.t+ph-(v/CRMAX)*ph;};
+
+    // heatmap cells
+    var step=5;
+    for(var px=0;px<pw;px+=step){ for(var py=0;py<ph;py+=step){
+      var vcp=(px+step/2)/pw*CPMAX, vcr=CRMAX-((py+step/2)/ph*CRMAX);
+      c.fillStyle=colr(prob(vcp,vcr,e)); c.fillRect(pad.l+px,pad.t+py,step+1,step+1);
+    }}
+    // border
+    c.strokeStyle='#26344f';c.lineWidth=1;c.strokeRect(pad.l,pad.t,pw,ph);
+
+    // isoboles (analytic): for target T, U*=(T/(1-T))^(1/n); cr = c50r*(U*-cp/c50p)/(1+a*cp/c50p)
+    function isobole(T,dash){
+      var Ut=Math.pow(T/(1-T),1/e.n);
+      c.strokeStyle='#ffffff';c.lineWidth=dash?1.6:2.2;c.setLineDash(dash?[5,4]:[]);
+      c.beginPath(); var started=false;
+      for(var i=0;i<=240;i++){ var vcp=i/240*CPMAX; var up=vcp/e.c50p; var vcr=e.c50r*(Ut-up)/(1+e.a*up);
+        if(vcr<0||vcr>CRMAX){ started=false; continue; }
+        var X=xOf(vcp),Y=yOf(vcr); if(!started){c.moveTo(X,Y);started=true;}else c.lineTo(X,Y); }
+      c.stroke(); c.setLineDash([]);
+    }
+    function isoLabel(T,txt){
+      var Ut=Math.pow(T/(1-T),1/e.n);
+      for(var f=0.62;f>0.04;f-=0.04){ var vcp=f*CPMAX, up=vcp/e.c50p, vcr=e.c50r*(Ut-up)/(1+e.a*up);
+        if(vcr>=CRMAX*0.04&&vcr<=CRMAX*0.96){ var X=xOf(vcp),Y=yOf(vcr);
+          c.font='600 10px '+mono(); c.textAlign='center'; c.textBaseline='middle';
+          var tw=c.measureText(txt).width; c.fillStyle='rgba(8,14,22,.78)'; c.fillRect(X-tw/2-3,Y-8,tw+6,16);
+          c.fillStyle='#dfe8f4'; c.fillText(txt,X,Y); return; } }
+    }
+    isobole(0.5,true); isobole(0.95,false);
+    isoLabel(0.95,'95%'); isoLabel(0.5,'50%');
+
+    // operating point crosshair + ring
+    var X=xOf(cp),Y=yOf(cr);
+    c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=1;c.setLineDash([3,3]);
+    c.beginPath();c.moveTo(X,pad.t);c.lineTo(X,pad.t+ph);c.moveTo(pad.l,Y);c.lineTo(pad.l+pw,Y);c.stroke();c.setLineDash([]);
+    c.fillStyle=e.color;c.strokeStyle='#fff';c.lineWidth=2.5;
+    c.beginPath();c.arc(X,Y,8,0,7);c.fill();c.stroke();
+
+    // axes labels + ticks
+    c.fillStyle='#9aa7b8';c.font='11px '+mono();c.textAlign='center';c.textBaseline='top';
+    c.fillText('プロポフォール Ce  (µg/mL)',pad.l+pw/2,H-16);
+    for(var gx=0;gx<=6;gx++){var vv=gx/6*CPMAX;ctxTick(c,xOf(vv),pad.t+ph,vv);}
+    c.save();c.translate(14,pad.t+ph/2);c.rotate(-Math.PI/2);c.fillText('レミフェンタニル Ce  (ng/mL)',0,0);c.restore();
+    c.textAlign='right';c.textBaseline='middle';
+    for(var gy=0;gy<=4;gy++){var vy=gy/4*CRMAX;c.fillStyle='#6c7b95';c.fillText(vy.toFixed(0),pad.l-6,yOf(vy));}
+  }
+  function ctxTick(c,x,y,v){ c.fillStyle='#6c7b95';c.textAlign='center';c.textBaseline='top';c.fillText(v.toFixed(0),x,y+4); }
+  function mono(){return 'ui-monospace,Menlo,Consolas,monospace';}
+
+  function fromSlider(){ render(); }
+
+  // canvas interaction → set operating point
+  var dragging=false;
+  function setFromEvent(ev){
+    var cv=$('cv'), r=cv.getBoundingClientRect();
+    var clientX=(ev.touches?ev.touches[0].clientX:ev.clientX), clientY=(ev.touches?ev.touches[0].clientY:ev.clientY);
+    var x=clientX-r.left, y=clientY-r.top;
+    var pw=cv.clientWidth-pad.l-pad.r, ph=cv.clientHeight-pad.t-pad.b;
+    var cp=(x-pad.l)/pw*CPMAX, cr=CRMAX-((y-pad.t)/ph*CRMAX);
+    cp=Math.max(0,Math.min(CPMAX,cp)); cr=Math.max(0,Math.min(CRMAX,cr));
+    $('cp').value=cp.toFixed(1); $('cr').value=cr.toFixed(1); render();
+  }
+  (function bind(){ var cv=$('cv');
+    cv.addEventListener('mousedown',function(e){dragging=true;setFromEvent(e);});
+    window.addEventListener('mousemove',function(e){if(dragging)setFromEvent(e);});
+    window.addEventListener('mouseup',function(){dragging=false;});
+    cv.addEventListener('touchstart',function(e){dragging=true;setFromEvent(e);e.preventDefault();},{passive:false});
+    cv.addEventListener('touchmove',function(e){if(dragging)setFromEvent(e);e.preventDefault();},{passive:false});
+    cv.addEventListener('touchend',function(){dragging=false;});
+    cv.addEventListener('touchcancel',function(){dragging=false;});
+  })();
+  window.addEventListener('resize',function(){ scheduleDraw(); });
+  window.addEventListener('orientationchange',function(){ setTimeout(scheduleDraw,250); });
+  render();
+
+  // service worker (offline)
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  }
+</script>
+</body>
+</html>
