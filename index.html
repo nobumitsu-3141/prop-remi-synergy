@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>プロポフォール–レミフェンタニル 相乗効果ナビ｜離島麻酔ツールキット</title>
-<meta name="description" content="プロポフォールとレミフェンタニルの相乗効果（応答曲面・Greco モデル）を可視化する麻酔教育ツール。">
+<meta name="description" content="プロポフォールとレミフェンタニルの相乗効果（応答曲面・Greco モデル）と、投与量→効果部位濃度→反応確率の時間予測を可視化する麻酔教育ツール。">
 <meta name="theme-color" content="#0c111b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -24,12 +24,17 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--ink);color:var(--txt);font-family:var(--ui);-webkit-text-size-adjust:100%}
   body{line-height:1.5;padding-bottom:calc(40px + env(safe-area-inset-bottom))}
-  .wrap{max-width:960px;margin:0 auto;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
-  header{border-bottom:1px solid var(--line);padding:12px 0;padding-top:calc(12px + env(safe-area-inset-top));position:sticky;top:0;background:#0c111b;z-index:20}
+  .wrap{max-width:980px;margin:0 auto;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  header{border-bottom:1px solid var(--line);padding:12px 0 0;padding-top:calc(12px + env(safe-area-inset-top));position:sticky;top:0;background:#0c111b;z-index:20}
   .brand{display:flex;flex-direction:column;line-height:1.15}
   .brand b{font-size:15px;letter-spacing:.02em}
   .brand span{font-size:11px;color:var(--dim);font-family:var(--mono)}
+  .tabs{display:flex;gap:4px;margin-top:10px}
+  .tabs button{flex:1;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:var(--ui);font-size:13px;font-weight:700;padding:10px 6px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .tabs button[aria-selected="true"]{color:var(--teal);border-bottom-color:var(--teal)}
   main{padding-top:16px}
+  .tabpane{display:none}
+  .tabpane.active{display:block}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
   .card h3{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
   .sub{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:14px 0 8px}
@@ -37,12 +42,13 @@
   .seg{display:flex;flex-wrap:wrap;gap:6px;background:transparent}
   .seg button{background:var(--elev);border:1px solid var(--line);color:var(--muted);font-family:var(--ui);font-size:12.5px;font-weight:600;padding:9px 13px;min-height:40px;cursor:pointer;border-radius:9px;-webkit-tap-highlight-color:transparent}
   .seg button[aria-pressed="true"]{color:#06231f}
-  .seg.preset button{background:var(--elev);border-color:var(--line);color:var(--muted)}
   .seg.preset button:active{border-color:var(--teal);color:var(--teal)}
 
   .layout{display:grid;grid-template-columns:1.25fr 1fr;gap:14px}
   @media(max-width:760px){.layout{grid-template-columns:1fr}}
-  canvas{display:block;width:100%;height:clamp(300px,58vw,440px);background:#0a0f18;border:1px solid var(--line);border-radius:12px;touch-action:none;cursor:crosshair;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  canvas{display:block;width:100%;background:#0a0f18;border:1px solid var(--line);border-radius:12px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  canvas.surf{height:clamp(300px,58vw,440px);cursor:crosshair}
+  canvas.tc{height:clamp(220px,46vw,300px);margin-top:6px}
 
   .sliders{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;margin-top:14px}
   @media(max-width:520px){.sliders{grid-template-columns:1fr}}
@@ -53,8 +59,8 @@
   input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;background:var(--line);outline:none;margin-top:10px}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--teal);cursor:pointer;border:4px solid #0c111b;box-shadow:0 0 0 1px var(--line)}
   input[type=range].r::-webkit-slider-thumb{background:var(--violet)}
+  input[type=range].w::-webkit-slider-thumb{background:#cbd5e1}
   input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--teal);border:4px solid #0c111b}
-  input[type=range].r::-moz-range-thumb{background:var(--violet)}
 
   .verdict{background:var(--elev);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:10px}
   .verdict .lab{font-size:11px;color:var(--muted);letter-spacing:.04em}
@@ -88,6 +94,31 @@
   .legend .iso{display:inline-flex;align-items:center;gap:5px}
   .legend .iso i{display:inline-block;width:16px;height:0;border-top:2px solid #fff}
   .legend .iso i.d{border-top-style:dashed}
+  .legend .sw{display:inline-flex;align-items:center;gap:5px}
+  .legend .sw i{display:inline-block;width:14px;height:3px;border-radius:2px}
+
+  /* input grids for simulator */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+  .fld label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}
+  .fld input[type=number]{width:100%;background:#0c1320;border:1px solid var(--line);border-radius:8px;color:var(--txt);font-family:var(--mono);font-size:15px;padding:9px 10px;-webkit-appearance:none}
+  .fld .u{font-size:10px;color:var(--dim);font-weight:600}
+  select{width:100%;background:#0c1320;border:1px solid var(--line);border-radius:8px;color:var(--txt);font-family:var(--ui);font-size:13px;font-weight:600;padding:9px 10px;-webkit-appearance:none;appearance:none}
+  .sex{display:flex;gap:6px}
+  .sex button{flex:1;background:var(--elev);border:1px solid var(--line);color:var(--muted);font-weight:700;font-size:13px;padding:9px;border-radius:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sex button[aria-pressed="true"]{background:#15303a;border-color:var(--teal);color:var(--teal)}
+
+  .ttt{background:linear-gradient(135deg,#10231a,#13261c);border:1px solid #1f5a3e;border-radius:12px;padding:14px;margin-top:4px}
+  .ttt .lab{font-size:11px;color:#7fd6ad;letter-spacing:.04em}
+  .ttt .big{font-family:var(--mono);font-size:34px;font-weight:800;color:var(--green);line-height:1.05;margin-top:3px;font-variant-numeric:tabular-nums}
+  .ttt .big.miss{color:var(--amber);font-size:20px}
+  .ttt .meta{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.6}
+  .ttt .meta b{color:var(--txt);font-family:var(--mono)}
+
+  .now{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+  .now .it{flex:1;min-width:92px;background:var(--elev);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .now .it .k{font-size:10px;color:var(--muted)}
+  .now .it .x{font-family:var(--mono);font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
 
   details.refbox{margin-top:6px}
   details.refbox summary{font-size:11px;color:var(--muted);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;list-style:none;padding:4px 0}
@@ -97,15 +128,25 @@
   .ref{font-size:11px;color:var(--dim);line-height:1.7}
   .ref b{color:var(--muted)}
   .note{font-size:12px;color:var(--muted);line-height:1.6}
+  .warn{font-size:11.5px;color:#ffd9a8;background:#33260f;border:1px solid #6b4d1c;border-radius:9px;padding:8px 11px;margin-top:10px;line-height:1.6;display:none}
+  .warn.show{display:block}
   .disc{background:#3a1d1d;border:1px solid #7f3030;border-radius:11px;padding:11px 13px;font-size:11.5px;color:#ffd9d9;line-height:1.6;margin-top:14px}
   .disc b{color:#ffb3b3}
   @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><b>プロポフォール–レミフェンタニル 相乗効果ナビ</b><span>GOTO ANESTHESIA TOOLKIT · RESPONSE SURFACE</span></div></div></header>
+<header><div class="wrap">
+  <div class="brand"><b>プロポフォール–レミフェンタニル 相乗効果ナビ</b><span>GOTO ANESTHESIA TOOLKIT · RESPONSE SURFACE + PK</span></div>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tabBtn-surface" aria-selected="true" onclick="showTab('surface')">① 応答曲面</button>
+    <button role="tab" id="tabBtn-sim" aria-selected="false" onclick="showTab('sim')">② 投与シミュレータ</button>
+  </div>
+</div></header>
 
 <main class="wrap">
+  <!-- ===================== TAB 1: response surface ===================== -->
+  <section class="tabpane active" id="pane-surface">
   <div class="card">
     <h3>表示する応答曲面（エンドポイント）</h3>
     <div class="seg" id="epSeg"></div>
@@ -116,7 +157,7 @@
 
     <div class="layout" style="margin-top:16px">
       <div>
-        <canvas id="cv"></canvas>
+        <canvas id="cv" class="surf"></canvas>
         <div class="legend">
           <span>無反応確率</span><span class="grad"></span><span>低 → 高</span>
           <span class="iso"><i></i>95% isobole</span><span class="iso"><i class="d"></i>50% isobole</span>
@@ -151,15 +192,101 @@
       </div>
     </div>
 
-    <details class="refbox"><summary>モデルと文献</summary>
-      <p class="ref">Greco モデル：効果 = U<sup>n</sup>/(U<sup>n</sup>+1)、U = C<sub>P</sub>/C50<sub>P</sub> + C<sub>R</sub>/C50<sub>R</sub> + α·(C<sub>P</sub>/C50<sub>P</sub>)(C<sub>R</sub>/C50<sub>R</sub>)。「相加（相乗なし）」は同じ式で α=0 とした理論値で、その差が相乗による上乗せを表します。パラメータは <b>Kern SE, et al.</b> <i>Anesthesiology</i> 2004;100:1373 ／ <b>Johnson KB, et al.</b> <i>Anesth Analg</i> 2008;106:471（検証）より：意識消失 C50p2.2/C50r33.1/n5.0/α3.6、喉頭鏡 5.6/48.9/2.2/33.2、電気テタヌス 4.6/23.1/6.0/14.7、圧痛 4.2/8.8/8.3/8.2。モデル形：<b>Greco WR</b> <i>Pharmacol Rev</i> 1995；<b>Minto CF</b> <i>Anesthesiology</i> 2000。</p>
+    <details class="refbox"><summary>モデルと文献（PD：応答曲面）</summary>
+      <p class="ref">Greco モデル：効果 = U<sup>n</sup>/(U<sup>n</sup>+1)、U = C<sub>P</sub>/C50<sub>P</sub> + C<sub>R</sub>/C50<sub>R</sub> + α·(C<sub>P</sub>/C50<sub>P</sub>)(C<sub>R</sub>/C50<sub>R</sub>)。「相加（相乗なし）」は同じ式で α=0 とした理論値で、その差が相乗による上乗せ。パラメータは <b>Kern SE, et al.</b> <i>Anesthesiology</i> 2004;100:1373 ／ <b>Johnson KB, et al.</b> <i>Anesth Analg</i> 2008;106:471（検証）より。モデル形：<b>Greco WR</b> <i>Pharmacol Rev</i> 1995；<b>Minto CF</b> <i>Anesthesiology</i> 2000。</p>
     </details>
-    <div class="disc"><b>注意：</b>母集団薬力学モデルに基づく確率推定で、個々の患者の反応・併用薬(ベンゾ等)・侵襲度の差を保証しません。プリセットは概念理解のための例であり投与量の推奨ではありません。臨床的観察(BIS・体動・自律神経反応)と併せて判断してください。Ce は薬物動態モデル依存です。</div>
   </div>
+  </section>
+
+  <!-- ===================== TAB 2: dose -> Ce simulator ===================== -->
+  <section class="tabpane" id="pane-sim">
+  <div class="card">
+    <h3>患者情報・PKモデル</h3>
+    <div class="grid3">
+      <div class="fld"><label>年齢 <span class="u">歳</span></label><input id="ipAge" type="number" min="18" max="100" step="1" value="50" oninput="simRun()"></div>
+      <div class="fld"><label>体重 <span class="u">kg</span></label><input id="ipWt" type="number" min="30" max="200" step="1" value="60" oninput="simRun()"></div>
+      <div class="fld"><label>身長 <span class="u">cm</span></label><input id="ipHt" type="number" min="120" max="210" step="1" value="165" oninput="simRun()"></div>
+      <div class="fld"><label>性別</label>
+        <div class="sex"><button id="sexM" aria-pressed="true" onclick="setSex(true)">男性</button><button id="sexF" aria-pressed="false" onclick="setSex(false)">女性</button></div>
+      </div>
+      <div class="fld"><label>プロポフォール PKモデル</label>
+        <select id="mdlProp" onchange="simRun()"><option value="schnider">Schnider（既定）</option><option value="marsh">Marsh（modified, ke0 1.2）</option><option value="eleveld">Eleveld 2018</option></select>
+      </div>
+      <div class="fld"><label>レミフェンタニル PKモデル</label>
+        <select id="mdlRemi" onchange="simRun()"><option value="minto">Minto（既定）</option><option value="eleveld">Eleveld 2017</option></select>
+      </div>
+    </div>
+    <div class="warn" id="bmiWarn"></div>
+
+    <h3 style="margin-top:18px">投与設定（導入）</h3>
+    <div class="sub">プリセット</div>
+    <div class="seg preset" id="simPreset"></div>
+    <div class="grid2" style="margin-top:12px">
+      <div class="fld"><label>プロポフォール ボーラス <span class="u">mg/kg</span></label><input id="dPropB" type="number" min="0" max="4" step="0.1" value="0" oninput="simRun()"></div>
+      <div class="fld"><label>プロポフォール 持続 <span class="u">mg/kg/h</span></label><input id="dPropR" type="number" min="0" max="20" step="0.5" value="10" oninput="simRun()"></div>
+      <div class="fld"><label>レミフェンタニル ボーラス <span class="u">µg/kg</span></label><input id="dRemiB" type="number" min="0" max="3" step="0.1" value="0" oninput="simRun()"></div>
+      <div class="fld"><label>レミフェンタニル 持続 <span class="u">µg/kg/min</span></label><input id="dRemiR" type="number" min="0" max="1" step="0.05" value="0.3" oninput="simRun()"></div>
+    </div>
+
+    <h3 style="margin-top:18px">目標とする刺激・反応</h3>
+    <div class="seg" id="simEpSeg"></div>
+    <div class="grid2" style="margin-top:10px">
+      <div class="fld"><label>到達したい「無反応確率」</label>
+        <select id="simTarget" onchange="simRender()"><option value="0.5">50%</option><option value="0.9">90%</option><option value="0.95" selected>95%</option><option value="0.99">99%</option></select>
+      </div>
+      <div class="fld"><label>シミュレーション時間</label>
+        <select id="simHorizon" onchange="simRun()"><option value="10">10 分</option><option value="15" selected>15 分</option><option value="20">20 分</option><option value="30">30 分</option></select>
+      </div>
+    </div>
+
+    <div class="ttt" id="tttBox" style="margin-top:16px">
+      <div class="lab" id="tttLab">目標到達までの予測時間</div>
+      <div class="big" id="tttBig">—</div>
+      <div class="meta" id="tttMeta"></div>
+    </div>
+
+    <div class="layout" style="margin-top:16px">
+      <div>
+        <canvas id="cvSim" class="surf"></canvas>
+        <div class="legend">
+          <span class="sw"><i style="background:#dfe8f4"></i>Ce 軌跡</span>
+          <span class="iso"><i></i><span id="simIsoLab">95%</span> isobole</span>
+          <span class="iso"><i class="d"></i>50% isobole</span>
+          <span>●=現在時刻</span>
+        </div>
+      </div>
+      <div>
+        <div class="sl" style="margin-bottom:8px">
+          <div class="top"><label for="simT">時刻（スクラブ）</label><span class="v"><span id="simTV">0.0</span><small>分</small></span></div>
+          <input id="simT" class="w" type="range" min="0" max="15" step="0.1" value="0" oninput="simScrub()">
+        </div>
+        <div class="now">
+          <div class="it"><div class="k">プロポフォール Ce</div><div class="x" id="nowCp" style="color:var(--teal)">—</div></div>
+          <div class="it"><div class="k">レミフェンタニル Ce</div><div class="x" id="nowCr" style="color:var(--violet)">—</div></div>
+          <div class="it"><div class="k" id="nowPlab">無反応確率</div><div class="x" id="nowP">—</div></div>
+        </div>
+        <canvas id="cvTC" class="tc"></canvas>
+        <div class="legend">
+          <span class="sw"><i style="background:var(--teal)"></i>Ce プロポ</span>
+          <span class="sw"><i style="background:var(--violet)"></i>Ce レミ</span>
+          <span class="sw"><i style="background:#e9eef7"></i>無反応確率</span>
+          <span>┊=目標到達</span>
+        </div>
+      </div>
+    </div>
+
+    <details class="refbox"><summary>PKモデルと式の出典</summary>
+      <p class="ref">効果部位濃度 Ce は3-コンパートメント＋効果部位（dCe/dt=k<sub>e0</sub>(C<sub>p</sub>−Ce)）をRK4積分。<b>Schnider</b> SL <i>Anesthesiology</i> 1998/99（k<sub>e0</sub>=0.456/min, LBM=James）；<b>Marsh</b> B <i>BJA</i> 1991（体重比例・modified k<sub>e0</sub>=1.2/min, Struys 2000）；<b>Eleveld</b> DJ <i>BJA</i> 2018（プロポ・Al-Sallami FFM・k<sub>e0</sub>=0.146·(wt/70)<sup>−0.25</sup>・オピオイド併用前提）。<b>Minto</b> CF <i>Anesthesiology</i> 1997（レミ・LBM=James, k<sub>e0</sub>=0.595−0.007(age−40)）；<b>Eleveld</b> DJ <i>Anesthesiology</i> 2017（レミ・Al-Sallami FFM, k<sub>e0</sub>=1.09·e<sup>−0.0289(age−35)</sup>）。応答曲面のC50は①タブ参照（PD）。</p>
+    </details>
+  </div>
+  </section>
+
+  <div class="disc"><b>注意：</b>母集団薬力学（応答曲面）と母集団薬物動態（PK）モデルに基づく確率・濃度の<b>推定</b>です。Ce は選んだPKモデルに依存し、C50 は元論文が用いたモデルで較正されているため、絶対値の整合は保証されません。プリセット・予測時間は概念理解のための例であり、投与量や導入時間の推奨ではありません。実際の麻酔は臨床的観察(BIS・体動・自律神経反応・血圧)と併せて判断してください。Schnider/Minto は高度肥満でLBM(James式)が破綻しえます。</div>
   <p class="note" style="text-align:center;color:var(--dim);font-size:11px;margin-top:-4px">オフライン対応 · ホーム画面に追加して全画面アプリとして使用できます</p>
 </main>
 
 <script>
+  /* ===================== shared: endpoints & Greco PD ===================== */
   var EP = {
     lor:    {name:'意識消失 (無反応 OAA/S<2)', c50p:2.2, c50r:33.1, n:5.0, a:3.6,  color:'#2dd4bf'},
     laryng: {name:'喉頭鏡・挿管に無反応',        c50p:5.6, c50r:48.9, n:2.2, a:33.2, color:'#a78bfa'},
@@ -167,107 +294,36 @@
     algo:   {name:'圧痛(術後痛相当)に無反応',      c50p:4.2, c50r:8.8,  n:8.3, a:8.2,  color:'#fb7185'}
   };
   var order=['lor','laryng','tetany','algo'];
-  var sel='laryng';
   var CPMAX=12, CRMAX=16;
-  var PRESETS=[
-    {n:'浅い(覚醒域近く)',cp:1.5,cr:2.0},
-    {n:'バランス維持',     cp:3.0,cr:4.0},
-    {n:'挿管刺激に対応',   cp:4.0,cr:6.0},
-    {n:'レミ偏重(Pro節約)',cp:2.0,cr:9.0},
-    {n:'Pro偏重(低オピオイド)',cp:5.5,cr:1.5}
-  ];
   function $(id){return document.getElementById(id);}
-
-  // Greco response surface (with synergy)
   function prob(cp,cr,e){ var up=cp/e.c50p, ur=cr/e.c50r; var U=up+ur+e.a*up*ur; if(U<=0)return 0; var Un=Math.pow(U,e.n); return Un/(Un+1); }
-  // additive reference (alpha = 0, no synergy)
   function probAdd(cp,cr,e){ var up=cp/e.c50p, ur=cr/e.c50r; var U=up+ur; if(U<=0)return 0; var Un=Math.pow(U,e.n); return Un/(Un+1); }
-
-  // build endpoint selector + list + presets
-  (function init(){
-    var seg='';
-    order.forEach(function(k){ seg+='<button data-k="'+k+'" style="--c:'+EP[k].color+';background:'+EP[k].color+'22;border-color:'+EP[k].color+'66;color:'+EP[k].color+'" aria-pressed="'+(k===sel)+'" onclick="setSel(\''+k+'\')">'+EP[k].name+'</button>'; });
-    $('epSeg').innerHTML=seg;
-    var pre='';
-    PRESETS.forEach(function(p,i){ pre+='<button onclick="setPoint('+p.cp+','+p.cr+')">'+p.n+'</button>'; });
-    $('presetSeg').innerHTML=pre;
-    var list='';
-    order.forEach(function(k){ list+='<div class="ep" style="--c:'+EP[k].color+'" data-k="'+k+'" aria-pressed="'+(k===sel)+'" onclick="setSel(\''+k+'\')">'+
-      '<div class="row"><span class="name">'+EP[k].name+'</span><span class="p" id="p_'+k+'">—</span></div>'+
-      '<div class="bar"><i id="bar_'+k+'" style="width:0%"></i></div></div>'; });
-    $('epList').innerHTML=list;
-  })();
-
-  function setSel(k){ sel=k;
-    document.querySelectorAll('#epSeg button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-k')===k);});
-    document.querySelectorAll('#epList .ep').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-k')===k);});
-    render();
-  }
-  function setPoint(cp,cr){ $('cp').value=cp.toFixed(1); $('cr').value=cr.toFixed(1); render(); }
-
-  // ---- canvas ----
-  var pad={l:54,r:14,t:14,b:40};
-  function dpi(cv){ var ratio=window.devicePixelRatio||1, w=cv.clientWidth, h=cv.clientHeight;
-    cv.width=Math.round(w*ratio); cv.height=Math.round(h*ratio); var c=cv.getContext('2d'); c.setTransform(ratio,0,0,ratio,0,0); return {c:c,w:w,h:h}; }
   function lerp(a,b,t){return a+(b-a)*t;}
+  function mono(){return 'ui-monospace,Menlo,Consolas,monospace';}
   function colr(p){ var s0=[12,25,38],s1=[21,84,90],s2=[45,212,191],c;
     if(p<0.5){var t=p/0.5;c=[lerp(s0[0],s1[0],t),lerp(s0[1],s1[1],t),lerp(s0[2],s1[2],t)];}
     else{var t=(p-0.5)/0.5;c=[lerp(s1[0],s2[0],t),lerp(s1[1],s2[1],t),lerp(s1[2],s2[2],t)];}
     return 'rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')'; }
+  function dpi(cv){ var ratio=window.devicePixelRatio||1, w=cv.clientWidth, h=cv.clientHeight;
+    cv.width=Math.round(w*ratio); cv.height=Math.round(h*ratio); var c=cv.getContext('2d'); c.setTransform(ratio,0,0,ratio,0,0); return {c:c,w:w,h:h}; }
 
-  var curCp=3.5, curCr=4.0, rafPending=false;
-  function scheduleDraw(){ if(rafPending)return; rafPending=true; requestAnimationFrame(function(){ rafPending=false; draw(curCp,curCr,EP[sel]); }); }
-
-  function render(){
-    var cp=Number($('cp').value), cr=Number($('cr').value);
-    curCp=cp; curCr=cr;
-    $('cpV').textContent=cp.toFixed(1); $('crV').textContent=cr.toFixed(1);
-    var e=EP[sel];
-
-    // endpoint readouts
-    order.forEach(function(k){ var pr=prob(cp,cr,EP[k]); $('p_'+k).textContent=Math.round(pr*100)+'%'; $('bar_'+k).style.width=(pr*100)+'%'; });
-
-    // verdict (selected endpoint at operating point)
-    var pB=prob(cp,cr,e), pct=Math.round(pB*100);
-    $('vLab').textContent=e.name+'（動作点）';
-    $('vBig').textContent=pct+'%'; $('vBig').style.color=e.color;
-    var st,col;
-    if(pB>=0.95){st='95%以上 — この刺激に無反応の可能性が高い';col='var(--green)';}
-    else if(pB>=0.5){st='50–95% — 効果が不十分な可能性あり';col='var(--amber)';}
-    else{st='50%未満 — 反応する可能性が高い';col='var(--rose)';}
-    $('vStat').textContent=st; $('vStat').style.color=col; $('vDot').style.background=col;
-
-    // synergy box
-    $('synTitle').textContent='相乗効果（'+e.name+'）';
-    var pP=prob(cp,0,e), pR=prob(0,cr,e), pAdd=probAdd(cp,cr,e);
-    var gain=Math.max(0,pB-pAdd);
-    $('synP').textContent=Math.round(pP*100)+'%'; $('synR').textContent=Math.round(pR*100)+'%';
-    $('synAdd').textContent=Math.round(pAdd*100)+'%';
-    $('synBoth').textContent=Math.round(pB*100)+'%'; $('synBoth').style.color=e.color;
-    $('synGain').textContent='+'+Math.round(gain*100)+' pt';
-
-    scheduleDraw();
-  }
-
-  function draw(cp,cr,e){
-    var cv=$('cv'); var s=dpi(cv), c=s.c, W=s.w, H=s.h;
+  /* shared surface renderer: heatmap + isoboles, optional trajectory + point */
+  var padS={l:54,r:14,t:14,b:40};
+  function drawSurface(cv,e,opt){
+    opt=opt||{}; var s=dpi(cv), c=s.c, W=s.w, H=s.h;
+    if(W<10){return;}
     c.clearRect(0,0,W,H);
-    var pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
-    var xOf=function(v){return pad.l+(v/CPMAX)*pw;};
-    var yOf=function(v){return pad.t+ph-(v/CRMAX)*ph;};
-
-    // heatmap cells
+    var pw=W-padS.l-padS.r, ph=H-padS.t-padS.b;
+    var xOf=function(v){return padS.l+(v/CPMAX)*pw;};
+    var yOf=function(v){return padS.t+ph-(v/CRMAX)*ph;};
     var step=5;
     for(var px=0;px<pw;px+=step){ for(var py=0;py<ph;py+=step){
       var vcp=(px+step/2)/pw*CPMAX, vcr=CRMAX-((py+step/2)/ph*CRMAX);
-      c.fillStyle=colr(prob(vcp,vcr,e)); c.fillRect(pad.l+px,pad.t+py,step+1,step+1);
+      c.fillStyle=colr(prob(vcp,vcr,e)); c.fillRect(padS.l+px,padS.t+py,step+1,step+1);
     }}
-    // border
-    c.strokeStyle='#26344f';c.lineWidth=1;c.strokeRect(pad.l,pad.t,pw,ph);
-
-    // isoboles (analytic): for target T, U*=(T/(1-T))^(1/n); cr = c50r*(U*-cp/c50p)/(1+a*cp/c50p)
+    c.strokeStyle='#26344f';c.lineWidth=1;c.strokeRect(padS.l,padS.t,pw,ph);
     function isobole(T,dash){
-      var Ut=Math.pow(T/(1-T),1/e.n);
+      if(T<=0||T>=1)return; var Ut=Math.pow(T/(1-T),1/e.n);
       c.strokeStyle='#ffffff';c.lineWidth=dash?1.6:2.2;c.setLineDash(dash?[5,4]:[]);
       c.beginPath(); var started=false;
       for(var i=0;i<=240;i++){ var vcp=i/240*CPMAX; var up=vcp/e.c50p; var vcr=e.c50r*(Ut-up)/(1+e.a*up);
@@ -276,64 +332,281 @@
       c.stroke(); c.setLineDash([]);
     }
     function isoLabel(T,txt){
-      var Ut=Math.pow(T/(1-T),1/e.n);
+      if(T<=0||T>=1)return; var Ut=Math.pow(T/(1-T),1/e.n);
       for(var f=0.62;f>0.04;f-=0.04){ var vcp=f*CPMAX, up=vcp/e.c50p, vcr=e.c50r*(Ut-up)/(1+e.a*up);
         if(vcr>=CRMAX*0.04&&vcr<=CRMAX*0.96){ var X=xOf(vcp),Y=yOf(vcr);
           c.font='600 10px '+mono(); c.textAlign='center'; c.textBaseline='middle';
           var tw=c.measureText(txt).width; c.fillStyle='rgba(8,14,22,.78)'; c.fillRect(X-tw/2-3,Y-8,tw+6,16);
           c.fillStyle='#dfe8f4'; c.fillText(txt,X,Y); return; } }
     }
-    isobole(0.5,true); isobole(0.95,false);
-    isoLabel(0.95,'95%'); isoLabel(0.5,'50%');
+    isobole(0.5,true); isoLabel(0.5,'50%');
+    var topT=(opt.target!=null)?opt.target:0.95;
+    isobole(topT,false); isoLabel(topT,Math.round(topT*100)+'%');
 
-    // operating point crosshair + ring
-    var X=xOf(cp),Y=yOf(cr);
-    c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=1;c.setLineDash([3,3]);
-    c.beginPath();c.moveTo(X,pad.t);c.lineTo(X,pad.t+ph);c.moveTo(pad.l,Y);c.lineTo(pad.l+pw,Y);c.stroke();c.setLineDash([]);
-    c.fillStyle=e.color;c.strokeStyle='#fff';c.lineWidth=2.5;
-    c.beginPath();c.arc(X,Y,8,0,7);c.fill();c.stroke();
-
-    // axes labels + ticks
+    // trajectory
+    if(opt.traj&&opt.traj.length>1){
+      c.strokeStyle='rgba(223,232,244,.92)';c.lineWidth=2.4;c.beginPath();
+      for(var j=0;j<opt.traj.length;j++){ var P=opt.traj[j]; var X=xOf(Math.min(CPMAX,P.ceP)),Y=yOf(Math.min(CRMAX,P.ceR));
+        if(j===0)c.moveTo(X,Y);else c.lineTo(X,Y);} c.stroke();
+      // start marker
+      var p0=opt.traj[0]; c.fillStyle='#64748b'; c.beginPath();c.arc(xOf(p0.ceP),yOf(p0.ceR),3,0,7);c.fill();
+    }
+    // operating point
+    if(opt.cp!=null){
+      var X=xOf(Math.min(CPMAX,opt.cp)),Y=yOf(Math.min(CRMAX,opt.cr));
+      if(opt.cross){ c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=1;c.setLineDash([3,3]);
+        c.beginPath();c.moveTo(X,padS.t);c.lineTo(X,padS.t+ph);c.moveTo(padS.l,Y);c.lineTo(padS.l+pw,Y);c.stroke();c.setLineDash([]); }
+      c.fillStyle=e.color;c.strokeStyle='#fff';c.lineWidth=2.5;
+      c.beginPath();c.arc(X,Y,8,0,7);c.fill();c.stroke();
+    }
+    // axes
     c.fillStyle='#9aa7b8';c.font='11px '+mono();c.textAlign='center';c.textBaseline='top';
-    c.fillText('プロポフォール Ce  (µg/mL)',pad.l+pw/2,H-16);
-    for(var gx=0;gx<=6;gx++){var vv=gx/6*CPMAX;ctxTick(c,xOf(vv),pad.t+ph,vv);}
-    c.save();c.translate(14,pad.t+ph/2);c.rotate(-Math.PI/2);c.fillText('レミフェンタニル Ce  (ng/mL)',0,0);c.restore();
+    c.fillText('プロポフォール Ce  (µg/mL)',padS.l+pw/2,H-16);
+    for(var gx=0;gx<=6;gx++){var vv=gx/6*CPMAX;c.fillStyle='#6c7b95';c.textAlign='center';c.textBaseline='top';c.fillText(vv.toFixed(0),xOf(vv),padS.t+ph+4);}
+    c.save();c.translate(14,padS.t+ph/2);c.rotate(-Math.PI/2);c.fillStyle='#9aa7b8';c.textAlign='center';c.textBaseline='top';c.fillText('レミフェンタニル Ce  (ng/mL)',0,0);c.restore();
     c.textAlign='right';c.textBaseline='middle';
-    for(var gy=0;gy<=4;gy++){var vy=gy/4*CRMAX;c.fillStyle='#6c7b95';c.fillText(vy.toFixed(0),pad.l-6,yOf(vy));}
+    for(var gy=0;gy<=4;gy++){var vy=gy/4*CRMAX;c.fillStyle='#6c7b95';c.fillText(vy.toFixed(0),padS.l-6,yOf(vy));}
   }
-  function ctxTick(c,x,y,v){ c.fillStyle='#6c7b95';c.textAlign='center';c.textBaseline='top';c.fillText(v.toFixed(0),x,y+4); }
-  function mono(){return 'ui-monospace,Menlo,Consolas,monospace';}
 
+  /* ===================== TAB 1: manual surface ===================== */
+  var sel='laryng';
+  var PRESETS=[
+    {n:'浅い(覚醒域近く)',cp:1.5,cr:2.0},{n:'バランス維持',cp:3.0,cr:4.0},
+    {n:'挿管刺激に対応',cp:4.0,cr:6.0},{n:'レミ偏重(Pro節約)',cp:2.0,cr:9.0},{n:'Pro偏重(低オピオイド)',cp:5.5,cr:1.5}
+  ];
+  (function init(){
+    var seg='';
+    order.forEach(function(k){ seg+='<button data-k="'+k+'" style="--c:'+EP[k].color+';background:'+EP[k].color+'22;border-color:'+EP[k].color+'66;color:'+EP[k].color+'" aria-pressed="'+(k===sel)+'" onclick="setSel(\''+k+'\')">'+EP[k].name+'</button>'; });
+    $('epSeg').innerHTML=seg;
+    var pre=''; PRESETS.forEach(function(p){ pre+='<button onclick="setPoint('+p.cp+','+p.cr+')">'+p.n+'</button>'; }); $('presetSeg').innerHTML=pre;
+    var list=''; order.forEach(function(k){ list+='<div class="ep" style="--c:'+EP[k].color+'" data-k="'+k+'" aria-pressed="'+(k===sel)+'" onclick="setSel(\''+k+'\')">'+
+      '<div class="row"><span class="name">'+EP[k].name+'</span><span class="p" id="p_'+k+'">—</span></div><div class="bar"><i id="bar_'+k+'" style="width:0%"></i></div></div>'; });
+    $('epList').innerHTML=list;
+  })();
+  function setSel(k){ sel=k;
+    document.querySelectorAll('#epSeg button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-k')===k);});
+    document.querySelectorAll('#epList .ep').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-k')===k);});
+    render();
+  }
+  function setPoint(cp,cr){ $('cp').value=cp.toFixed(1); $('cr').value=cr.toFixed(1); render(); }
+  var curCp=3.5,curCr=4.0,raf1=false;
+  function schedule1(){ if(raf1)return; raf1=true; requestAnimationFrame(function(){ raf1=false; drawSurface($('cv'),EP[sel],{cp:curCp,cr:curCr,cross:true,target:0.95}); }); }
+  function render(){
+    var cp=Number($('cp').value), cr=Number($('cr').value); curCp=cp; curCr=cr;
+    $('cpV').textContent=cp.toFixed(1); $('crV').textContent=cr.toFixed(1);
+    var e=EP[sel];
+    order.forEach(function(k){ var pr=prob(cp,cr,EP[k]); $('p_'+k).textContent=Math.round(pr*100)+'%'; $('bar_'+k).style.width=(pr*100)+'%'; });
+    var pB=prob(cp,cr,e), pct=Math.round(pB*100);
+    $('vLab').textContent=e.name+'（動作点）'; $('vBig').textContent=pct+'%'; $('vBig').style.color=e.color;
+    var st,col; if(pB>=0.95){st='95%以上 — この刺激に無反応の可能性が高い';col='var(--green)';}
+    else if(pB>=0.5){st='50–95% — 効果が不十分な可能性あり';col='var(--amber)';}
+    else{st='50%未満 — 反応する可能性が高い';col='var(--rose)';}
+    $('vStat').textContent=st; $('vStat').style.color=col; $('vDot').style.background=col;
+    $('synTitle').textContent='相乗効果（'+e.name+'）';
+    var pP=prob(cp,0,e), pR=prob(0,cr,e), pAdd=probAdd(cp,cr,e), gain=Math.max(0,pB-pAdd);
+    $('synP').textContent=Math.round(pP*100)+'%'; $('synR').textContent=Math.round(pR*100)+'%';
+    $('synAdd').textContent=Math.round(pAdd*100)+'%'; $('synBoth').textContent=Math.round(pB*100)+'%'; $('synBoth').style.color=e.color;
+    $('synGain').textContent='+'+Math.round(gain*100)+' pt';
+    schedule1();
+  }
   function fromSlider(){ render(); }
-
-  // canvas interaction → set operating point
-  var dragging=false;
-  function setFromEvent(ev){
-    var cv=$('cv'), r=cv.getBoundingClientRect();
-    var clientX=(ev.touches?ev.touches[0].clientX:ev.clientX), clientY=(ev.touches?ev.touches[0].clientY:ev.clientY);
-    var x=clientX-r.left, y=clientY-r.top;
-    var pw=cv.clientWidth-pad.l-pad.r, ph=cv.clientHeight-pad.t-pad.b;
-    var cp=(x-pad.l)/pw*CPMAX, cr=CRMAX-((y-pad.t)/ph*CRMAX);
-    cp=Math.max(0,Math.min(CPMAX,cp)); cr=Math.max(0,Math.min(CRMAX,cr));
-    $('cp').value=cp.toFixed(1); $('cr').value=cr.toFixed(1); render();
-  }
-  (function bind(){ var cv=$('cv');
+  (function bind(){ var cv=$('cv'); var dragging=false;
+    function setFromEvent(ev){ var r=cv.getBoundingClientRect();
+      var clientX=(ev.touches?ev.touches[0].clientX:ev.clientX), clientY=(ev.touches?ev.touches[0].clientY:ev.clientY);
+      var x=clientX-r.left, y=clientY-r.top, pw=cv.clientWidth-padS.l-padS.r, ph=cv.clientHeight-padS.t-padS.b;
+      var cp=(x-padS.l)/pw*CPMAX, cr=CRMAX-((y-padS.t)/ph*CRMAX);
+      cp=Math.max(0,Math.min(CPMAX,cp)); cr=Math.max(0,Math.min(CRMAX,cr));
+      $('cp').value=cp.toFixed(1); $('cr').value=cr.toFixed(1); render(); }
     cv.addEventListener('mousedown',function(e){dragging=true;setFromEvent(e);});
     window.addEventListener('mousemove',function(e){if(dragging)setFromEvent(e);});
     window.addEventListener('mouseup',function(){dragging=false;});
     cv.addEventListener('touchstart',function(e){dragging=true;setFromEvent(e);e.preventDefault();},{passive:false});
     cv.addEventListener('touchmove',function(e){if(dragging)setFromEvent(e);e.preventDefault();},{passive:false});
-    cv.addEventListener('touchend',function(){dragging=false;});
-    cv.addEventListener('touchcancel',function(){dragging=false;});
+    cv.addEventListener('touchend',function(){dragging=false;}); cv.addEventListener('touchcancel',function(){dragging=false;});
   })();
-  window.addEventListener('resize',function(){ scheduleDraw(); });
-  window.addEventListener('orientationchange',function(){ setTimeout(scheduleDraw,250); });
-  render();
 
-  // service worker (offline)
-  if('serviceWorker' in navigator){
-    window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  /* ===================== PK MODELS (verified equations) ===================== */
+  function lbmJames(wt,ht,male){ return male ? 1.1*wt - 128*Math.pow(wt/ht,2) : 1.07*wt - 148*Math.pow(wt/ht,2); }
+  function ffmAlSallami(age,wt,ht,male){ var bmi=10000*wt/(ht*ht);
+    return male ? (0.88 + 0.12/(1+Math.pow(age/13.4,-12.7)))*(9270*wt)/(6680+216*bmi)
+                : (1.11 + (1-1.11)/(1+Math.pow(age/7.1,-1.1)))*(9270*wt)/(8780+244*bmi); }
+  // Propofol — Schnider 1998/99
+  function pkSchnider(age,wt,ht,male){ var lbm=lbmJames(wt,ht,male);
+    var V1=4.27, V2=18.9-0.391*(age-53), V3=238;
+    var Cl1=1.89+0.0456*(wt-77)-0.0681*(lbm-59)+0.0264*(ht-177), Cl2=1.29-0.024*(age-53), Cl3=0.836;
+    return {V1:V1, k10:Cl1/V1, k12:Cl2/V1, k13:Cl3/V1, k21:Cl2/V2, k31:Cl3/V3, ke0:0.456}; }
+  // Propofol — Marsh 1991 (modified ke0)
+  function pkMarsh(age,wt,ht,male){ var V1=0.228*wt;
+    return {V1:V1, k10:0.119, k12:0.112, k13:0.0419, k21:0.055, k31:0.0033, ke0:1.2}; }
+  // Propofol — Eleveld 2018 (opioids present for co-induction)
+  function pkEleveldProp(age,wt,ht,male){
+    var fsig=function(x,e50,l){return Math.pow(x,l)/(Math.pow(x,l)+Math.pow(e50,l));};
+    var faging=function(k){return Math.exp(k*(age-35));};
+    var bmi=10000*wt/(ht*ht);
+    var ffm=ffmAlSallami(age,wt,ht,male);
+    var bmiR=10000*70/(170*170);
+    var ffmRef=(0.88+0.12/(1+Math.pow(35/13.4,-12.7)))*(9270*70)/(6680+216*bmiR);
+    var PMA=age*52.143+40, PMAref=35*52.143+40;
+    var fop=function(k){return Math.exp(k*age);};            // opioid factor = exp(k·AGE), opioids present
+    var V1=6.28*fsig(wt,33.6,1)/fsig(70,33.6,1);
+    var V2=25.5*(wt/70)*faging(-0.0156);
+    var V3=273*(ffm/ffmRef)*fop(-0.0138);                    // opioids present
+    var CLref= male?1.79:2.10;
+    var CL=CLref*Math.pow(wt/70,0.75)*(fsig(PMA,42.3,9.06)/fsig(PMAref,42.3,9.06))*fop(-0.00286);
+    var Q2=1.75*Math.pow(V2/25.5,0.75)*(1+1.30*(1-fsig(PMA,68.3,1)));
+    var Q3=1.11*Math.pow(V3/273,0.75)*(fsig(PMA,68.3,1)/fsig(PMAref,68.3,1));
+    var ke0=0.146*Math.pow(wt/70,-0.25);
+    return {V1:V1, k10:CL/V1, k12:Q2/V1, k13:Q3/V1, k21:Q2/V2, k31:Q3/V3, ke0:ke0}; }
+  // Remifentanil — Minto 1997
+  function pkMinto(age,wt,ht,male){ var lbm=lbmJames(wt,ht,male);
+    var V1=5.1-0.0201*(age-40)+0.072*(lbm-55), V2=9.82-0.0811*(age-40)+0.108*(lbm-55), V3=5.42;
+    var Cl1=2.6-0.0162*(age-40)+0.0191*(lbm-55), Cl2=2.05-0.0301*(age-40), Cl3=0.076-0.00113*(age-40);
+    return {V1:V1, k10:Cl1/V1, k12:Cl2/V1, k13:Cl3/V1, k21:Cl2/V2, k31:Cl3/V3, ke0:0.595-0.007*(age-40)}; }
+  // Remifentanil — Eleveld 2017
+  function pkEleveldRemi(age,wt,ht,male){
+    var bmi=10000*wt/(ht*ht);
+    var faging=function(x){return Math.exp(x*(age-35));};
+    var fsig=function(x,e50,l){return Math.pow(x,l)/(Math.pow(x,l)+Math.pow(e50,l));};
+    var ffm=ffmAlSallami(age,wt,ht,male);
+    var bmiR=10000*70/(170*170);
+    var ffmRef=(0.88+0.12/(1+Math.pow(35/13.4,-12.7)))*(9270*70)/(6680+216*bmiR);
+    var Fsize=ffm/ffmRef;
+    var KMAT=fsig(wt,2.88,2), KMATref=fsig(70,2.88,2);
+    var Fsex= male?1:1+0.470*fsig(age,12,6)*(1-fsig(age,45,6));
+    var V1=5.81*Fsize*faging(-0.00554);
+    var V2=8.82*Fsize*faging(-0.00327)*Fsex;
+    var V3=5.03*Fsize*faging(-0.0315)*Math.exp(-0.0260*(wt-70));
+    var CL=2.58*Math.pow(Fsize,0.75)*(KMAT/KMATref)*Fsex*faging(-0.00327);
+    var Q2=1.72*Math.pow(V2/8.82,0.75)*faging(-0.00554)*Fsex;
+    var Q3=0.124*Math.pow(V3/5.03,0.75)*faging(-0.00554);
+    return {V1:V1, k10:CL/V1, k12:Q2/V1, k13:Q3/V1, k21:Q2/V2, k31:Q3/V3, ke0:1.09*faging(-0.0289)}; }
+  var PROP_MODELS={schnider:pkSchnider, marsh:pkMarsh, eleveld:pkEleveldProp};
+  var REMI_MODELS={minto:pkMinto, eleveld:pkEleveldRemi};
+
+  /* 3-compartment + effect-site, RK4 */
+  function deriv(A,pk,inf){ var A1=A[0],A2=A[1],A3=A[2],Ce=A[3];
+    return [ inf-(pk.k10+pk.k12+pk.k13)*A1+pk.k21*A2+pk.k31*A3, pk.k12*A1-pk.k21*A2, pk.k13*A1-pk.k31*A3, pk.ke0*(A1/pk.V1-Ce) ]; }
+  function rk4(A,pk,inf,dt){
+    var k1=deriv(A,pk,inf);
+    var k2=deriv([A[0]+0.5*dt*k1[0],A[1]+0.5*dt*k1[1],A[2]+0.5*dt*k1[2],A[3]+0.5*dt*k1[3]],pk,inf);
+    var k3=deriv([A[0]+0.5*dt*k2[0],A[1]+0.5*dt*k2[1],A[2]+0.5*dt*k2[2],A[3]+0.5*dt*k2[3]],pk,inf);
+    var k4=deriv([A[0]+dt*k3[0],A[1]+dt*k3[1],A[2]+dt*k3[2],A[3]+dt*k3[3]],pk,inf);
+    return [ A[0]+dt/6*(k1[0]+2*k2[0]+2*k3[0]+k4[0]), A[1]+dt/6*(k1[1]+2*k2[1]+2*k3[1]+k4[1]),
+             A[2]+dt/6*(k1[2]+2*k2[2]+2*k3[2]+k4[2]), A[3]+dt/6*(k1[3]+2*k2[3]+2*k3[3]+k4[3]) ]; }
+
+  /* ===================== TAB 2: simulator ===================== */
+  var simSex=true, simSel='lor', simData=[], simTmax=15, simTTT=null;
+  var SIM_PRESETS=[
+    {n:'ショット導入＋レミ持続',pb:2.0,pr:0,rb:0,rr:0.25},
+    {n:'持続導入(infusion only)',pb:0,pr:10,rb:0,rr:0.3},
+    {n:'TIVA維持の例',pb:0,pr:6,rb:0,rr:0.2},
+    {n:'レミ単独ボーラス',pb:0,pr:0,rb:1.0,rr:0}
+  ];
+  (function initSim(){
+    var seg=''; order.forEach(function(k){ seg+='<button data-k="'+k+'" style="--c:'+EP[k].color+';background:'+EP[k].color+'22;border-color:'+EP[k].color+'66;color:'+EP[k].color+'" aria-pressed="'+(k===simSel)+'" onclick="setSimSel(\''+k+'\')">'+EP[k].name+'</button>'; });
+    $('simEpSeg').innerHTML=seg;
+    var pre=''; SIM_PRESETS.forEach(function(p,i){ pre+='<button onclick="simPreset('+i+')">'+p.n+'</button>'; }); $('simPreset').innerHTML=pre;
+  })();
+  function setSex(m){ simSex=m; $('sexM').setAttribute('aria-pressed',m); $('sexF').setAttribute('aria-pressed',!m); simRun(); }
+  function setSimSel(k){ simSel=k; document.querySelectorAll('#simEpSeg button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-k')===k);}); simRender(); }
+  function simPreset(i){ var p=SIM_PRESETS[i]; $('dPropB').value=p.pb; $('dPropR').value=p.pr; $('dRemiB').value=p.rb; $('dRemiR').value=p.rr; simRun(); }
+
+  function simRun(){
+    var age=clamp(+$('ipAge').value,18,100), wt=clamp(+$('ipWt').value,30,200), ht=clamp(+$('ipHt').value,120,210);
+    var pkP=PROP_MODELS[$('mdlProp').value](age,wt,ht,simSex);
+    var pkR=REMI_MODELS[$('mdlRemi').value](age,wt,ht,simSex);
+    var propB=(+$('dPropB').value)*wt, propR=(+$('dPropR').value)*wt/60;   // mg bolus ; mg/min infusion
+    var remiB=(+$('dRemiB').value)*wt, remiR=(+$('dRemiR').value)*wt;       // µg bolus ; µg/min infusion
+    simTmax=+$('simHorizon').value;
+    var dt=0.02, rec=Math.round(0.1/dt);
+    var AP=[propB,0,0,0], AR=[remiB,0,0,0];
+    simData=[{t:0,ceP:0,ceR:0}];
+    var n=Math.round(simTmax/dt);
+    for(var i=1;i<=n;i++){ AP=rk4(AP,pkP,propR,dt); AR=rk4(AR,pkR,remiR,dt);
+      if(i%rec===0){ simData.push({t:i*dt, ceP:AP[3], ceR:AR[3]}); } }
+    // BMI warning for Schnider/Minto (James LBM)
+    var bmi=wt/Math.pow(ht/100,2); var jamesUsed=($('mdlProp').value!=='eleveld')||($('mdlRemi').value!=='eleveld');
+    if(jamesUsed&&bmi>=35){ $('bmiWarn').classList.add('show'); $('bmiWarn').textContent='BMI '+bmi.toFixed(1)+'：Schnider/Minto は James式LBMを使うため高度肥満で精度が低下します。Eleveld の併用を検討してください。'; }
+    else $('bmiWarn').classList.remove('show');
+    $('simT').max=simTmax; if(+$('simT').value>simTmax)$('simT').value=simTmax;
+    simRender();
   }
+  function clamp(v,a,b){ if(isNaN(v))return a; return Math.max(a,Math.min(b,v)); }
+
+  function simRender(){
+    var e=EP[simSel], T=+$('simTarget').value;
+    $('simIsoLab').textContent=Math.round(T*100)+'%';
+    $('nowPlab').textContent=e.name.replace('に無反応','').replace(' (無反応 OAA/S<2)','')+' 無反応';
+    // time to target
+    simTTT=null; for(var i=0;i<simData.length;i++){ if(prob(simData[i].ceP,simData[i].ceR,e)>=T){ simTTT=simData[i]; break; } }
+    $('tttLab').textContent=e.name+'で「'+Math.round(T*100)+'% 無反応」に到達するまで';
+    if(simTTT){ $('tttBig').classList.remove('miss'); $('tttBig').textContent=fmtTime(simTTT.t);
+      $('tttMeta').innerHTML='到達時の Ce ＝ プロポフォール <b>'+simTTT.ceP.toFixed(2)+'</b> µg/mL ／ レミフェンタニル <b>'+simTTT.ceR.toFixed(2)+'</b> ng/mL'; }
+    else { var last=simData[simData.length-1]; var pLast=Math.round(prob(last.ceP,last.ceR,e)*100);
+      $('tttBig').classList.add('miss'); $('tttBig').textContent='この設定では '+simTmax+'分以内に未到達';
+      $('tttMeta').innerHTML=simTmax+'分時点で '+pLast+'%（Ce プロポ <b>'+last.ceP.toFixed(2)+'</b> / レミ <b>'+last.ceR.toFixed(2)+'</b>）。投与量や目標％を見直してください。'; }
+    drawSurface($('cvSim'),e,{traj:simData,target:T});
+    if(+$('simT').value>simTmax)$('simT').value=simTmax;
+    simScrub();
+    drawTC();
+  }
+  function fmtTime(t){ var m=Math.floor(t), s=Math.round((t-m)*60); if(s===60){m++;s=0;} return m+'分'+(s<10?'0':'')+s+'秒'; }
+  function atTime(t){ if(!simData.length)return {ceP:0,ceR:0}; var idx=Math.round(t/0.1); idx=Math.max(0,Math.min(simData.length-1,idx)); return simData[idx]; }
+  function simScrub(){
+    var t=+$('simT').value; $('simTV').textContent=t.toFixed(1);
+    var pt=atTime(t), e=EP[simSel];
+    $('nowCp').textContent=pt.ceP.toFixed(2); $('nowCr').textContent=pt.ceR.toFixed(2);
+    var pr=Math.round(prob(pt.ceP,pt.ceR,e)*100); $('nowP').textContent=pr+'%'; $('nowP').style.color=e.color;
+    drawSurface($('cvSim'),e,{traj:simData,target:+$('simTarget').value,cp:pt.ceP,cr:pt.ceR});
+    drawTC();
+  }
+
+  var padT={l:38,r:34,t:12,b:26};
+  function drawTC(){
+    var cv=$('cvTC'); var s=dpi(cv), c=s.c, W=s.w, H=s.h; if(W<10)return;
+    c.clearRect(0,0,W,H); var pw=W-padT.l-padT.r, ph=H-padT.t-padT.b;
+    var xOf=function(t){return padT.l+(t/simTmax)*pw;};
+    var yP=function(f){return padT.t+ph-f*ph;}; // fraction 0..1
+    // grid
+    c.strokeStyle='#1c2740';c.lineWidth=1;
+    for(var g=0;g<=4;g++){var y=padT.t+ph*g/4;c.beginPath();c.moveTo(padT.l,y);c.lineTo(padT.l+pw,y);c.stroke();}
+    c.strokeStyle='#26344f';c.strokeRect(padT.l,padT.t,pw,ph);
+    if(simData.length>1){
+      var e=EP[simSel];
+      function line(col,w,fn){ c.strokeStyle=col;c.lineWidth=w;c.beginPath(); for(var i=0;i<simData.length;i++){var X=xOf(simData[i].t),Y=yP(fn(simData[i]));if(i===0)c.moveTo(X,Y);else c.lineTo(X,Y);} c.stroke(); }
+      line('#2dd4bf',2,function(d){return Math.min(1,d.ceP/CPMAX);});
+      line('#a78bfa',2,function(d){return Math.min(1,d.ceR/CRMAX);});
+      line('#e9eef7',2.2,function(d){return prob(d.ceP,d.ceR,e);});
+      // target line
+      var T=+$('simTarget').value; c.strokeStyle='rgba(233,238,247,.4)';c.lineWidth=1;c.setLineDash([4,3]);
+      c.beginPath();c.moveTo(padT.l,yP(T));c.lineTo(padT.l+pw,yP(T));c.stroke();c.setLineDash([]);
+      // time-to-target marker
+      if(simTTT){ var Xt=xOf(simTTT.t); c.strokeStyle='var(--green)';c.strokeStyle='#34d399';c.lineWidth=1.4;c.setLineDash([3,3]);
+        c.beginPath();c.moveTo(Xt,padT.t);c.lineTo(Xt,padT.t+ph);c.stroke();c.setLineDash([]); }
+      // scrub marker
+      var ts=+$('simT').value, Xs=xOf(ts); c.strokeStyle='rgba(203,213,225,.85)';c.lineWidth=1;
+      c.beginPath();c.moveTo(Xs,padT.t);c.lineTo(Xs,padT.t+ph);c.stroke();
+    }
+    c.fillStyle='#6c7b95';c.font='10px '+mono();c.textAlign='center';c.textBaseline='top';
+    for(var tk=0;tk<=simTmax;tk+=(simTmax<=15?5:10)){ c.fillText(tk+'',xOf(tk),padT.t+ph+4); }
+    c.textAlign='left'; c.fillText('分',padT.l,padT.t+ph+4);
+    c.fillStyle='#93a1b8';c.textAlign='left';c.textBaseline='middle'; c.fillText('0%',padT.l+pw+4,yP(0)); c.fillText('100%',padT.l+pw+4,yP(1));
+  }
+
+  /* ===================== tabs & lifecycle ===================== */
+  var activeTab='surface';
+  function showTab(t){ activeTab=t;
+    $('pane-surface').classList.toggle('active',t==='surface'); $('pane-sim').classList.toggle('active',t==='sim');
+    $('tabBtn-surface').setAttribute('aria-selected',t==='surface'); $('tabBtn-sim').setAttribute('aria-selected',t==='sim');
+    if(t==='surface') schedule1(); else simRender();
+  }
+  function redrawActive(){ if(activeTab==='surface') schedule1(); else { drawSurface($('cvSim'),EP[simSel],{traj:simData,target:+$('simTarget').value,cp:atTime(+$('simT').value).ceP,cr:atTime(+$('simT').value).ceR}); drawTC(); } }
+  window.addEventListener('resize',redrawActive);
+  window.addEventListener('orientationchange',function(){ setTimeout(redrawActive,250); });
+
+  render(); simRun();
+
+  if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
 </body>
 </html>
