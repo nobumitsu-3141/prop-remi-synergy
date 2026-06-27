@@ -264,19 +264,22 @@
           <div class="it"><div class="k">プロポフォール Ce</div><div class="x" id="nowCp" style="color:var(--teal)">—</div></div>
           <div class="it"><div class="k">レミフェンタニル Ce</div><div class="x" id="nowCr" style="color:var(--violet)">—</div></div>
           <div class="it"><div class="k" id="nowPlab">無反応確率</div><div class="x" id="nowP">—</div></div>
+          <div class="it"><div class="k">予測BIS</div><div class="x" id="nowBIS">—</div></div>
         </div>
         <canvas id="cvTC" class="tc"></canvas>
         <div class="legend">
           <span class="sw"><i style="background:var(--teal)"></i>Ce プロポ</span>
           <span class="sw"><i style="background:var(--violet)"></i>Ce レミ</span>
           <span class="sw"><i style="background:#e9eef7"></i>無反応確率</span>
+          <span class="sw"><i style="background:var(--amber)"></i>予測BIS</span>
+          <span style="color:var(--green)">▥ BIS 40–60</span>
           <span>┊=目標到達</span>
         </div>
       </div>
     </div>
 
     <details class="refbox"><summary>PKモデルと式の出典</summary>
-      <p class="ref">効果部位濃度 Ce は3-コンパートメント＋効果部位（dCe/dt=k<sub>e0</sub>(C<sub>p</sub>−Ce)）をRK4積分。<b>Schnider</b> SL <i>Anesthesiology</i> 1998/99（k<sub>e0</sub>=0.456/min, LBM=James）；<b>Marsh</b> B <i>BJA</i> 1991（体重比例・modified k<sub>e0</sub>=1.2/min, Struys 2000）；<b>Eleveld</b> DJ <i>BJA</i> 2018（プロポ・Al-Sallami FFM・k<sub>e0</sub>=0.146·(wt/70)<sup>−0.25</sup>・オピオイド併用前提）。<b>Minto</b> CF <i>Anesthesiology</i> 1997（レミ・LBM=James, k<sub>e0</sub>=0.595−0.007(age−40)）；<b>Eleveld</b> DJ <i>Anesthesiology</i> 2017（レミ・Al-Sallami FFM, k<sub>e0</sub>=1.09·e<sup>−0.0289(age−35)</sup>）。応答曲面のC50は①タブ参照（PD）。</p>
+      <p class="ref">効果部位濃度 Ce は3-コンパートメント＋効果部位（dCe/dt=k<sub>e0</sub>(C<sub>p</sub>−Ce)）をRK4積分。<b>Schnider</b> SL <i>Anesthesiology</i> 1998/99（k<sub>e0</sub>=0.456/min, LBM=James）；<b>Marsh</b> B <i>BJA</i> 1991（体重比例・modified k<sub>e0</sub>=1.2/min, Struys 2000）；<b>Eleveld</b> DJ <i>BJA</i> 2018（プロポ・Al-Sallami FFM・k<sub>e0</sub>=0.146·(wt/70)<sup>−0.25</sup>・オピオイド併用前提）。<b>Minto</b> CF <i>Anesthesiology</i> 1997（レミ・LBM=James, k<sub>e0</sub>=0.595−0.007(age−40)）；<b>Eleveld</b> DJ <i>Anesthesiology</i> 2017（レミ・Al-Sallami FFM, k<sub>e0</sub>=1.09·e<sup>−0.0289(age−35)</sup>）。<b>予測BIS</b>＝Eleveld 2018 PD（Ce50=3.08·e<sup>−0.00635(age−35)</sup>, E0=93, γ=1.89/1.47）をプロポフォール Ce に適用（Schnider/Marsh選択時はそのCeを使う近似）。応答曲面のC50は①タブ参照（PD）。</p>
     </details>
   </div>
   </section>
@@ -482,6 +485,11 @@
     return {V1:V1, k10:CL/V1, k12:Q2/V1, k13:Q3/V1, k21:Q2/V2, k31:Q3/V3, ke0:1.09*faging(-0.0289)}; }
   var PROP_MODELS={schnider:pkSchnider, marsh:pkMarsh, eleveld:pkEleveldProp};
   var REMI_MODELS={minto:pkMinto, eleveld:pkEleveldRemi};
+  // Eleveld propofol BIS PD (Br J Anaesth 2018): BIS from propofol Ce, biphasic slope
+  function eleveldBIS(ceProp,age){ if(ceProp<=0)return 93;
+    var ce50=3.08*Math.exp(-0.00635*(age-35)); var g=ceProp<ce50?1.89:1.47;
+    var c=Math.pow(ceProp,g), c50=Math.pow(ce50,g); return 93*c50/(c50+c); }
+  function bisColor(b){ return b<40?'#60a5fa':(b<=60?'#34d399':'#f5a524'); }
 
   /* 3-compartment + effect-site, RK4 */
   function deriv(A,pk,inf){ var A1=A[0],A2=A[1],A3=A[2],Ce=A[3];
@@ -495,9 +503,9 @@
              A[2]+dt/6*(k1[2]+2*k2[2]+2*k3[2]+k4[2]), A[3]+dt/6*(k1[3]+2*k2[3]+2*k3[3]+k4[3]) ]; }
 
   /* ===================== TAB 2: simulator ===================== */
-  var simSex=true, simSel='lor', simData=[], simTmax=15, simTTT=null;
+  var simSex=true, simSel='lor', simData=[], simTmax=15, simTTT=null, simAge=50;
   var SIM_PRESETS=[
-    {n:'ショット導入＋レミ持続',pb:2.0,pr:0,rb:0,rr:0.25},
+    {n:'ショット導入＋レミ持続',pb:2.0,pr:0,rb:0.5,rr:0.25},
     {n:'持続導入(infusion only)',pb:0,pr:10,rb:0,rr:0.3},
     {n:'TIVA維持の例',pb:0,pr:6,rb:0,rr:0.2},
     {n:'レミ単独ボーラス',pb:0,pr:0,rb:1.0,rr:0}
@@ -513,6 +521,7 @@
 
   function simRun(){
     var age=clamp(+$('ipAge').value,18,100), wt=clamp(+$('ipWt').value,30,200), ht=clamp(+$('ipHt').value,120,210);
+    simAge=age;
     var pkP=PROP_MODELS[$('mdlProp').value](age,wt,ht,simSex);
     var pkR=REMI_MODELS[$('mdlRemi').value](age,wt,ht,simSex);
     var propB=(+$('dPropB').value)*wt, propR=(+$('dPropR').value)*wt/60;   // mg bolus ; mg/min infusion
@@ -541,7 +550,7 @@
     simTTT=null; for(var i=0;i<simData.length;i++){ if(prob(simData[i].ceP,simData[i].ceR,e)>=T){ simTTT=simData[i]; break; } }
     $('tttLab').textContent=e.name+'で「'+Math.round(T*100)+'% 無反応」に到達するまで';
     if(simTTT){ $('tttBig').classList.remove('miss'); $('tttBig').textContent=fmtTime(simTTT.t);
-      $('tttMeta').innerHTML='到達時の Ce ＝ プロポフォール <b>'+simTTT.ceP.toFixed(2)+'</b> µg/mL ／ レミフェンタニル <b>'+simTTT.ceR.toFixed(2)+'</b> ng/mL'; }
+      $('tttMeta').innerHTML='到達時の Ce ＝ プロポフォール <b>'+simTTT.ceP.toFixed(2)+'</b> µg/mL ／ レミフェンタニル <b>'+simTTT.ceR.toFixed(2)+'</b> ng/mL ／ 予測BIS <b>'+Math.round(eleveldBIS(simTTT.ceP,simAge))+'</b>'; }
     else { var last=simData[simData.length-1]; var pLast=Math.round(prob(last.ceP,last.ceR,e)*100);
       $('tttBig').classList.add('miss'); $('tttBig').textContent='この設定では '+simTmax+'分以内に未到達';
       $('tttMeta').innerHTML=simTmax+'分時点で '+pLast+'%（Ce プロポ <b>'+last.ceP.toFixed(2)+'</b> / レミ <b>'+last.ceR.toFixed(2)+'</b>）。投与量や目標％を見直してください。'; }
@@ -557,6 +566,7 @@
     var pt=atTime(t), e=EP[simSel];
     $('nowCp').textContent=pt.ceP.toFixed(2); $('nowCr').textContent=pt.ceR.toFixed(2);
     var pr=Math.round(prob(pt.ceP,pt.ceR,e)*100); $('nowP').textContent=pr+'%'; $('nowP').style.color=e.color;
+    var bis=Math.round(eleveldBIS(pt.ceP,simAge)); $('nowBIS').textContent=bis; $('nowBIS').style.color=bisColor(bis);
     drawSurface($('cvSim'),e,{traj:simData,target:+$('simTarget').value,cp:pt.ceP,cr:pt.ceR});
     drawTC();
   }
@@ -573,7 +583,10 @@
     c.strokeStyle='#26344f';c.strokeRect(padT.l,padT.t,pw,ph);
     if(simData.length>1){
       var e=EP[simSel];
+      // BIS 40-60 target band (BIS/100 = 0.40-0.60)
+      c.fillStyle='rgba(52,211,153,.10)'; c.fillRect(padT.l,yP(0.6),pw,yP(0.4)-yP(0.6));
       function line(col,w,fn){ c.strokeStyle=col;c.lineWidth=w;c.beginPath(); for(var i=0;i<simData.length;i++){var X=xOf(simData[i].t),Y=yP(fn(simData[i]));if(i===0)c.moveTo(X,Y);else c.lineTo(X,Y);} c.stroke(); }
+      line('#f5a524',1.8,function(d){return Math.min(1,eleveldBIS(d.ceP,simAge)/100);});
       line('#2dd4bf',2,function(d){return Math.min(1,d.ceP/CPMAX);});
       line('#a78bfa',2,function(d){return Math.min(1,d.ceR/CRMAX);});
       line('#e9eef7',2.2,function(d){return prob(d.ceP,d.ceR,e);});
