@@ -137,16 +137,16 @@
 </head>
 <body>
 <header><div class="wrap">
-  <div class="brand"><b>プロポフォール–レミフェンタニル 相乗効果ナビ</b><span>GOTO ANESTHESIA TOOLKIT · RESPONSE SURFACE + PK</span></div>
+  <div class="brand"><b>プロポフォール–レミフェンタニル 相乗効果ナビ</b><span>GOTO ANESTHESIA TOOLKIT · PK SIMULATOR + RESPONSE SURFACE</span></div>
   <div class="tabs" role="tablist">
-    <button role="tab" id="tabBtn-surface" aria-selected="true" onclick="showTab('surface')">① 応答曲面</button>
-    <button role="tab" id="tabBtn-sim" aria-selected="false" onclick="showTab('sim')">② 投与シミュレータ</button>
+    <button role="tab" id="tabBtn-sim" aria-selected="true" onclick="showTab('sim')">① 投与シミュレータ</button>
+    <button role="tab" id="tabBtn-surface" aria-selected="false" onclick="showTab('surface')">② 応答曲面</button>
   </div>
 </div></header>
 
 <main class="wrap">
-  <!-- ===================== TAB 1: response surface ===================== -->
-  <section class="tabpane active" id="pane-surface">
+  <!-- ===================== TAB ②: response surface ===================== -->
+  <section class="tabpane" id="pane-surface">
   <div class="card">
     <h3>表示する応答曲面（エンドポイント）</h3>
     <div class="seg" id="epSeg"></div>
@@ -198,8 +198,8 @@
   </div>
   </section>
 
-  <!-- ===================== TAB 2: dose -> Ce simulator ===================== -->
-  <section class="tabpane" id="pane-sim">
+  <!-- ===================== TAB ①: dose -> Ce simulator ===================== -->
+  <section class="tabpane active" id="pane-sim">
   <div class="card">
     <h3>患者情報・PKモデル</h3>
     <div class="grid3">
@@ -257,8 +257,8 @@
       </div>
       <div>
         <div class="sl" style="margin-bottom:8px">
-          <div class="top"><label for="simT">時刻（スクラブ）</label><span class="v"><span id="simTV">0.0</span><small>分</small></span></div>
-          <input id="simT" class="w" type="range" min="0" max="15" step="0.1" value="0" oninput="simScrub()">
+          <div class="top"><label for="simT">時刻（スクラブ・秒単位）</label><span class="v"><span id="simTV">0分00秒</span></span></div>
+          <input id="simT" class="w" type="range" min="0" max="900" step="1" value="0" oninput="simScrub()">
         </div>
         <div class="now">
           <div class="it"><div class="k">プロポフォール Ce</div><div class="x" id="nowCp" style="color:var(--teal)">—</div></div>
@@ -527,17 +527,17 @@
     var propB=(+$('dPropB').value)*wt, propR=(+$('dPropR').value)*wt/60;   // mg bolus ; mg/min infusion
     var remiB=(+$('dRemiB').value)*wt, remiR=(+$('dRemiR').value)*wt;       // µg bolus ; µg/min infusion
     simTmax=+$('simHorizon').value;
-    var dt=0.02, rec=Math.round(0.1/dt);
+    var dt=1/60;   // 1-second steps; record every second for second-resolution scrub
     var AP=[propB,0,0,0], AR=[remiB,0,0,0];
     simData=[{t:0,ceP:0,ceR:0}];
-    var n=Math.round(simTmax/dt);
+    var n=Math.round(simTmax*60);
     for(var i=1;i<=n;i++){ AP=rk4(AP,pkP,propR,dt); AR=rk4(AR,pkR,remiR,dt);
-      if(i%rec===0){ simData.push({t:i*dt, ceP:AP[3], ceR:AR[3]}); } }
+      simData.push({t:i*dt, ceP:AP[3], ceR:AR[3]}); }
     // BMI warning for Schnider/Minto (James LBM)
     var bmi=wt/Math.pow(ht/100,2); var jamesUsed=($('mdlProp').value!=='eleveld')||($('mdlRemi').value!=='eleveld');
     if(jamesUsed&&bmi>=35){ $('bmiWarn').classList.add('show'); $('bmiWarn').textContent='BMI '+bmi.toFixed(1)+'：Schnider/Minto は James式LBMを使うため高度肥満で精度が低下します。Eleveld の併用を検討してください。'; }
     else $('bmiWarn').classList.remove('show');
-    $('simT').max=simTmax; if(+$('simT').value>simTmax)$('simT').value=simTmax;
+    $('simT').max=simTmax*60; if(+$('simT').value>simTmax*60)$('simT').value=simTmax*60;
     simRender();
   }
   function clamp(v,a,b){ if(isNaN(v))return a; return Math.max(a,Math.min(b,v)); }
@@ -554,15 +554,14 @@
     else { var last=simData[simData.length-1]; var pLast=Math.round(prob(last.ceP,last.ceR,e)*100);
       $('tttBig').classList.add('miss'); $('tttBig').textContent='この設定では '+simTmax+'分以内に未到達';
       $('tttMeta').innerHTML=simTmax+'分時点で '+pLast+'%（Ce プロポ <b>'+last.ceP.toFixed(2)+'</b> / レミ <b>'+last.ceR.toFixed(2)+'</b>）。投与量や目標％を見直してください。'; }
-    drawSurface($('cvSim'),e,{traj:simData,target:T});
-    if(+$('simT').value>simTmax)$('simT').value=simTmax;
+    if(+$('simT').value>simTmax*60)$('simT').value=simTmax*60;
     simScrub();
-    drawTC();
   }
   function fmtTime(t){ var m=Math.floor(t), s=Math.round((t-m)*60); if(s===60){m++;s=0;} return m+'分'+(s<10?'0':'')+s+'秒'; }
-  function atTime(t){ if(!simData.length)return {ceP:0,ceR:0}; var idx=Math.round(t/0.1); idx=Math.max(0,Math.min(simData.length-1,idx)); return simData[idx]; }
+  function scrubT(){ return (+$('simT').value)/60; }   // slider is in seconds -> minutes
+  function atTime(t){ if(!simData.length)return {ceP:0,ceR:0}; var idx=Math.round(t*60); idx=Math.max(0,Math.min(simData.length-1,idx)); return simData[idx]; }
   function simScrub(){
-    var t=+$('simT').value; $('simTV').textContent=t.toFixed(1);
+    var t=scrubT(); $('simTV').textContent=fmtTime(t);
     var pt=atTime(t), e=EP[simSel];
     $('nowCp').textContent=pt.ceP.toFixed(2); $('nowCr').textContent=pt.ceR.toFixed(2);
     var pr=Math.round(prob(pt.ceP,pt.ceR,e)*100); $('nowP').textContent=pr+'%'; $('nowP').style.color=e.color;
@@ -597,7 +596,7 @@
       if(simTTT){ var Xt=xOf(simTTT.t); c.strokeStyle='var(--green)';c.strokeStyle='#34d399';c.lineWidth=1.4;c.setLineDash([3,3]);
         c.beginPath();c.moveTo(Xt,padT.t);c.lineTo(Xt,padT.t+ph);c.stroke();c.setLineDash([]); }
       // scrub marker
-      var ts=+$('simT').value, Xs=xOf(ts); c.strokeStyle='rgba(203,213,225,.85)';c.lineWidth=1;
+      var ts=scrubT(), Xs=xOf(ts); c.strokeStyle='rgba(203,213,225,.85)';c.lineWidth=1;
       c.beginPath();c.moveTo(Xs,padT.t);c.lineTo(Xs,padT.t+ph);c.stroke();
     }
     c.fillStyle='#6c7b95';c.font='10px '+mono();c.textAlign='center';c.textBaseline='top';
@@ -607,13 +606,13 @@
   }
 
   /* ===================== tabs & lifecycle ===================== */
-  var activeTab='surface';
+  var activeTab='sim';
   function showTab(t){ activeTab=t;
     $('pane-surface').classList.toggle('active',t==='surface'); $('pane-sim').classList.toggle('active',t==='sim');
     $('tabBtn-surface').setAttribute('aria-selected',t==='surface'); $('tabBtn-sim').setAttribute('aria-selected',t==='sim');
-    if(t==='surface') schedule1(); else simRender();
+    if(t==='surface') drawSurface($('cv'),EP[sel],{cp:curCp,cr:curCr,cross:true,target:0.95}); else simScrub();
   }
-  function redrawActive(){ if(activeTab==='surface') schedule1(); else { drawSurface($('cvSim'),EP[simSel],{traj:simData,target:+$('simTarget').value,cp:atTime(+$('simT').value).ceP,cr:atTime(+$('simT').value).ceR}); drawTC(); } }
+  function redrawActive(){ if(activeTab==='surface') schedule1(); else simScrub(); }
   window.addEventListener('resize',redrawActive);
   window.addEventListener('orientationchange',function(){ setTimeout(redrawActive,250); });
 
