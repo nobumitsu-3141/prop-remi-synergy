@@ -45,6 +45,7 @@
   .seg.preset button:active{border-color:var(--teal);color:var(--teal)}
 
   .layout{display:grid;grid-template-columns:1.25fr 1fr;gap:14px}
+  .layout.solo{grid-template-columns:1fr}
   @media(max-width:760px){.layout{grid-template-columns:1fr}}
   canvas{display:block;width:100%;background:#0a0f18;border:1px solid var(--line);border-radius:12px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   canvas.surf{height:clamp(300px,58vw,440px);cursor:crosshair}
@@ -201,7 +202,7 @@
   <!-- ===================== TAB ①: dose -> Ce simulator ===================== -->
   <section class="tabpane active" id="pane-sim">
   <div class="card">
-    <h3>患者情報・PKモデル</h3>
+    <h3>患者情報・薬剤</h3>
     <div class="grid3">
       <div class="fld"><label>年齢 <span class="u">歳</span></label><input id="ipAge" type="number" min="18" max="100" step="1" value="50" oninput="simRun()"></div>
       <div class="fld"><label>体重 <span class="u">kg</span></label><input id="ipWt" type="number" min="30" max="200" step="1" value="60" oninput="simRun()"></div>
@@ -209,29 +210,29 @@
       <div class="fld"><label>性別</label>
         <div class="sex"><button id="sexM" aria-pressed="true" onclick="setSex(true)">男性</button><button id="sexF" aria-pressed="false" onclick="setSex(false)">女性</button></div>
       </div>
-      <div class="fld"><label>プロポフォール PKモデル</label>
-        <select id="mdlProp" onchange="simRun()"><option value="schnider">Schnider（既定）</option><option value="marsh">Marsh（modified, ke0 1.2）</option><option value="eleveld">Eleveld 2018</option></select>
-      </div>
-      <div class="fld"><label>レミフェンタニル PKモデル</label>
-        <select id="mdlRemi" onchange="simRun()"><option value="minto">Minto（既定）</option><option value="eleveld">Eleveld 2017</option></select>
-      </div>
+      <div class="fld"><label>鎮静薬（催眠）</label><select id="selHyp" onchange="onHypChange()"></select></div>
+      <div class="fld"><label>鎮静薬 PKモデル</label><select id="selHypModel" onchange="simRun()"></select></div>
+      <div class="fld"><label>鎮痛薬（オピオイド）</label><select id="selOp" onchange="onOpChange()"></select></div>
+      <div class="fld"><label>鎮痛薬 PKモデル</label><select id="selOpModel" onchange="simRun()"></select></div>
     </div>
     <div class="warn" id="bmiWarn"></div>
 
     <h3 style="margin-top:18px">投与設定（導入）</h3>
-    <div class="sub">プリセット</div>
-    <div class="seg preset" id="simPreset"></div>
+    <div id="simPresetWrap"><div class="sub">プリセット（プロポ×レミの例）</div>
+    <div class="seg preset" id="simPreset"></div></div>
     <div class="grid2" style="margin-top:12px">
-      <div class="fld"><label>プロポフォール ボーラス <span class="u">mg/kg</span></label><input id="dPropB" type="number" min="0" max="4" step="0.1" value="0" oninput="simRun()"></div>
-      <div class="fld"><label>プロポフォール 持続 <span class="u">mg/kg/h</span></label><input id="dPropR" type="number" min="0" max="20" step="0.5" value="10" oninput="simRun()"></div>
-      <div class="fld"><label>レミフェンタニル ボーラス <span class="u">µg/kg</span></label><input id="dRemiB" type="number" min="0" max="3" step="0.1" value="0" oninput="simRun()"></div>
-      <div class="fld"><label>レミフェンタニル 持続 <span class="u">µg/kg/min</span></label><input id="dRemiR" type="number" min="0" max="1" step="0.05" value="0.3" oninput="simRun()"></div>
+      <div class="fld"><label><span id="lblHypB">プロポフォール</span> ボーラス <span class="u">mg/kg</span></label><input id="dHypB" type="number" min="0" max="4" step="0.1" value="0" oninput="simRun()"></div>
+      <div class="fld"><label><span id="lblHypR">プロポフォール</span> 持続 <span class="u">mg/kg/h</span></label><input id="dHypR" type="number" min="0" max="20" step="0.5" value="10" oninput="simRun()"></div>
+      <div class="fld"><label><span id="lblOpB">レミフェンタニル</span> ボーラス <span class="u">µg/kg</span></label><input id="dOpB" type="number" min="0" max="3" step="0.1" value="0" oninput="simRun()"></div>
+      <div class="fld"><label><span id="lblOpR">レミフェンタニル</span> 持続 <span class="u">µg/kg/min</span></label><input id="dOpR" type="number" min="0" max="1" step="0.05" value="0.3" oninput="simRun()"></div>
     </div>
 
-    <h3 style="margin-top:18px">目標とする刺激・反応</h3>
-    <div class="seg" id="simEpSeg"></div>
+    <div class="warn" id="pairBanner" style="display:none"></div>
+
+    <div id="epBlock"><h3 style="margin-top:18px">目標とする刺激・反応</h3>
+    <div class="seg" id="simEpSeg"></div></div>
     <div class="grid2" style="margin-top:10px">
-      <div class="fld"><label>到達したい「無反応確率」</label>
+      <div class="fld" id="targetFld"><label>到達したい「無反応確率」</label>
         <select id="simTarget" onchange="simRender()"><option value="0.5">50%</option><option value="0.9">90%</option><option value="0.95" selected>95%</option><option value="0.99">99%</option></select>
       </div>
       <div class="fld"><label>シミュレーション時間</label>
@@ -245,8 +246,8 @@
       <div class="meta" id="tttMeta"></div>
     </div>
 
-    <div class="layout" style="margin-top:16px">
-      <div>
+    <div class="layout" id="simLayout" style="margin-top:16px">
+      <div id="surfCol">
         <canvas id="cvSim" class="surf"></canvas>
         <div class="legend">
           <span class="sw"><i style="background:#dfe8f4"></i>Ce 軌跡</span>
@@ -261,30 +262,30 @@
           <input id="simT" class="w" type="range" min="0" max="900" step="1" value="0" oninput="simScrub()">
         </div>
         <div class="now">
-          <div class="it"><div class="k">プロポフォール Ce</div><div class="x" id="nowCp" style="color:var(--teal)">—</div></div>
-          <div class="it"><div class="k">レミフェンタニル Ce</div><div class="x" id="nowCr" style="color:var(--violet)">—</div></div>
-          <div class="it"><div class="k" id="nowPlab">無反応確率</div><div class="x" id="nowP">—</div></div>
-          <div class="it"><div class="k">予測BIS</div><div class="x" id="nowBIS">—</div></div>
+          <div class="it"><div class="k" id="kHypCe">プロポフォール Ce</div><div class="x" id="nowCp" style="color:var(--teal)">—</div></div>
+          <div class="it"><div class="k" id="kOpCe">レミフェンタニル Ce</div><div class="x" id="nowCr" style="color:var(--violet)">—</div></div>
+          <div class="it" id="tileP"><div class="k" id="nowPlab">無反応確率</div><div class="x" id="nowP">—</div></div>
+          <div class="it" id="tileDepth"><div class="k" id="kDepth">予測BIS</div><div class="x" id="nowBIS">—</div></div>
         </div>
         <canvas id="cvTC" class="tc"></canvas>
-        <div class="legend">
-          <span class="sw"><i style="background:var(--teal)"></i>Ce プロポ</span>
-          <span class="sw"><i style="background:var(--violet)"></i>Ce レミ</span>
-          <span class="sw"><i style="background:#e9eef7"></i>無反応確率</span>
-          <span class="sw"><i style="background:var(--amber)"></i>予測BIS</span>
-          <span style="color:var(--green)">▥ BIS 40–60</span>
-          <span>┊=目標到達</span>
+        <div class="legend" id="tcLegend">
+          <span class="sw"><i style="background:var(--teal)"></i><span id="lgHyp">Ce プロポ</span></span>
+          <span class="sw"><i style="background:var(--violet)"></i><span id="lgOp">Ce レミ</span></span>
+          <span class="sw" id="lgPwrap"><i style="background:#e9eef7"></i>無反応確率</span>
+          <span class="sw" id="lgDepthWrap"><i style="background:var(--amber)"></i><span id="lgDepth">予測BIS</span></span>
+          <span id="lgBand" style="color:var(--green)">▥ BIS 40–60</span>
+          <span id="lgTtt">┊=目標到達</span>
         </div>
       </div>
     </div>
 
     <details class="refbox"><summary>PKモデルと式の出典</summary>
-      <p class="ref">効果部位濃度 Ce は3-コンパートメント＋効果部位（dCe/dt=k<sub>e0</sub>(C<sub>p</sub>−Ce)）をRK4積分。<b>Schnider</b> SL <i>Anesthesiology</i> 1998/99（k<sub>e0</sub>=0.456/min, LBM=James）；<b>Marsh</b> B <i>BJA</i> 1991（体重比例・modified k<sub>e0</sub>=1.2/min, Struys 2000）；<b>Eleveld</b> DJ <i>BJA</i> 2018（プロポ・Al-Sallami FFM・k<sub>e0</sub>=0.146·(wt/70)<sup>−0.25</sup>・オピオイド併用前提）。<b>Minto</b> CF <i>Anesthesiology</i> 1997（レミ・LBM=James, k<sub>e0</sub>=0.595−0.007(age−40)）；<b>Eleveld</b> DJ <i>Anesthesiology</i> 2017（レミ・Al-Sallami FFM, k<sub>e0</sub>=1.09·e<sup>−0.0289(age−35)</sup>）。<b>予測BIS</b>＝Eleveld 2018 PD（Ce50=3.08·e<sup>−0.00635(age−35)</sup>, E0=93, γ=1.89/1.47）をプロポフォール Ce に適用（Schnider/Marsh選択時はそのCeを使う近似）。応答曲面のC50は①タブ参照（PD）。</p>
+      <p class="ref">効果部位濃度 Ce は3-コンパートメント＋効果部位（dCe/dt=k<sub>e0</sub>(C<sub>p</sub>−Ce)）をRK4積分。<b>Schnider</b> SL <i>Anesthesiology</i> 1998/99（k<sub>e0</sub>=0.456/min, LBM=James）；<b>Marsh</b> B <i>BJA</i> 1991（体重比例・modified k<sub>e0</sub>=1.2/min, Struys 2000）；<b>Eleveld</b> DJ <i>BJA</i> 2018（プロポ・Al-Sallami FFM・k<sub>e0</sub>=0.146·(wt/70)<sup>−0.25</sup>・オピオイド併用前提）。<b>Minto</b> CF <i>Anesthesiology</i> 1997（レミ・LBM=James, k<sub>e0</sub>=0.595−0.007(age−40)）；<b>Eleveld</b> DJ <i>Anesthesiology</i> 2017（レミ・Al-Sallami FFM, k<sub>e0</sub>=1.09·e<sup>−0.0289(age−35)</sup>）。<b>予測BIS</b>＝Eleveld 2018 PD（Ce50=3.08·e<sup>−0.00635(age−35)</sup>, E0=93, γ=1.89/1.47）をプロポフォール Ce に適用（Schnider/Marsh選択時はそのCeを使う近似）。<b>フェンタニル</b>＝Shafer <i>Anesthesiology</i> 1990（V1 6.09 L, k<sub>e0</sub>=0.147/min＝文献上の選択値）。<b>レミマゾラム</b>＝Schüttler <i>Anesthesiology</i> 2020（V1 4.39 L, k<sub>e0</sub>=0.27/min；意識消失確率＝MOAA/S≤1, Ce50 0.65 µg/mL, γ3.6）。<b>チアミラール(イソゾール)</b>＝専用モデルが無く、構造の近い<b>チオペンタール</b>（Stanski/Maitre <i>Anesthesiology</i> 1990, k<sub>e0</sub>=0.59/min）で代用した教育用近似。<b>相乗（無反応%）応答曲面は検証済みのプロポフォール×レミフェンタニル（Kern/Johnson）のみ</b>表示。他の組合せはCe（と鎮静の目安）のみ。レミマゾラム×レミフェンタニルは検証済み相互作用モデル（Vellinga <i>Anesthesiology</i> 2025）があり別途追加予定。応答曲面のC50は②タブ参照（PD）。</p>
     </details>
   </div>
   </section>
 
-  <div class="disc"><b>注意：</b>母集団薬力学（応答曲面）と母集団薬物動態（PK）モデルに基づく確率・濃度の<b>推定</b>です。Ce は選んだPKモデルに依存し、C50 は元論文が用いたモデルで較正されているため、絶対値の整合は保証されません。プリセット・予測時間は概念理解のための例であり、投与量や導入時間の推奨ではありません。実際の麻酔は臨床的観察(BIS・体動・自律神経反応・血圧)と併せて判断してください。Schnider/Minto は高度肥満でLBM(James式)が破綻しえます。</div>
+  <div class="disc"><b>注意：</b>母集団薬力学（応答曲面）と母集団薬物動態（PK）モデルに基づく確率・濃度の<b>推定</b>です。Ce は選んだPKモデルに依存し、C50 は元論文が用いたモデルで較正されているため、絶対値の整合は保証されません。プリセット・予測時間は概念理解のための例であり、投与量や導入時間の推奨ではありません。実際の麻酔は臨床的観察(BIS・体動・自律神経反応・血圧)と併せて判断してください。Schnider/Minto は高度肥満でLBM(James式)が破綻しえます。<b>チアミラール(イソゾール)は専用モデルが無いためチオペンタールで代用した近似</b>です。相乗（無反応%）応答曲面は検証済みのプロポフォール×レミフェンタニルのみに表示し、他の組合せは効果部位濃度のみ示します。</div>
   <p class="note" style="text-align:center;color:var(--dim);font-size:11px;margin-top:-4px">オフライン対応 · ホーム画面に追加して全画面アプリとして使用できます</p>
 </main>
 
@@ -483,13 +484,42 @@
     var Q2=1.72*Math.pow(V2/8.82,0.75)*faging(-0.00554)*Fsex;
     var Q3=0.124*Math.pow(V3/5.03,0.75)*faging(-0.00554);
     return {V1:V1, k10:CL/V1, k12:Q2/V1, k13:Q3/V1, k21:Q2/V2, k31:Q3/V3, ke0:1.09*faging(-0.0289)}; }
-  var PROP_MODELS={schnider:pkSchnider, marsh:pkMarsh, eleveld:pkEleveldProp};
-  var REMI_MODELS={minto:pkMinto, eleveld:pkEleveldRemi};
+  // Fentanyl — Shafer 1990 (absolute units; ng/mL). ke0 0.147/min is a documented modeling choice.
+  function pkFentanyl(age,wt,ht,male){ return {V1:6.09, k10:0.0827, k12:0.471, k13:0.225, k21:0.102, k31:0.006, ke0:0.147}; }
+  // Remimazolam — Schüttler 2020 (µg/mL; ke0 for MOAA/S)
+  function pkRemimazolam(age,wt,ht,male){ var V1=4.39,V2=14.5,V3=15.5,CL=1.14,Q2=1.04,Q3=0.19;
+    return {V1:V1, k10:CL/V1, k12:Q2/V1, k13:Q3/V1, k21:Q2/V2, k31:Q3/V3, ke0:0.27}; }
+  // Thiamylal via Thiopental — Stanski/Maitre 1990 (per-kg; PROXY, µg/mL)
+  function pkThiopental(age,wt,ht,male){ var Vc=0.079*wt, Cl1=0.00307*wt, k12=(age<=35)?0.48:0.48-0.00288*(age-35);
+    return {V1:Vc, k10:Cl1/Vc, k12:k12, k13:0.107, k21:0.0787, k31:0.00389, ke0:0.59}; }
   // Eleveld propofol BIS PD (Br J Anaesth 2018): BIS from propofol Ce, biphasic slope
   function eleveldBIS(ceProp,age){ if(ceProp<=0)return 93;
     var ce50=3.08*Math.exp(-0.00635*(age-35)); var g=ceProp<ce50?1.89:1.47;
     var c=Math.pow(ceProp,g), c50=Math.pow(ce50,g); return 93*c50/(c50+c); }
   function bisColor(b){ return b<40?'#60a5fa':(b<=60?'#34d399':'#f5a524'); }
+  // Remimazolam sedation: P(意識消失 = MOAA/S<=1) — Schüttler 2020 (Ce50 0.65 µg/mL, γ 3.6)
+  function remimazLOC(ce){ if(ce<=0)return 0; var g=3.6, c=Math.pow(ce,g); return c/(Math.pow(0.65,g)+c); }
+
+  /* drug registry: models[key]=[label, fn]; depth=bis|loc|none; cmax=time-course display scale */
+  var HYP={
+    propofol:   {name:'プロポフォール', short:'プロポ', unit:'µg/mL', cmax:12, depth:'bis',
+      models:{schnider:['Schnider（既定）',pkSchnider], marsh:['Marsh（mod, ke0 1.2）',pkMarsh], eleveld:['Eleveld 2018',pkEleveldProp]},
+      dose:{bMax:4,bStep:0.1,bDef:0, rMax:20,rStep:0.5,rDef:10}},
+    remimazolam:{name:'レミマゾラム', short:'レミマゾ', unit:'µg/mL', cmax:2, depth:'loc',
+      models:{schuttler:['Schüttler 2020',pkRemimazolam]},
+      dose:{bMax:0.5,bStep:0.05,bDef:0, rMax:15,rStep:0.5,rDef:6}},
+    thiamylal:  {name:'チアミラール(イソゾール)', short:'チアミラール', unit:'µg/mL', cmax:50, depth:'none',
+      models:{thiopental:['チオペンタール代用(Stanski/Maitre)',pkThiopental]},
+      dose:{bMax:8,bStep:0.5,bDef:4, rMax:10,rStep:0.5,rDef:0}}
+  };
+  var OP={
+    remifentanil:{name:'レミフェンタニル', short:'レミ', unit:'ng/mL', cmax:16,
+      models:{minto:['Minto（既定）',pkMinto], eleveld:['Eleveld 2017',pkEleveldRemi]},
+      dose:{bMax:3,bStep:0.1,bDef:0, rMax:1,rStep:0.05,rDef:0.3}},
+    fentanyl:    {name:'フェンタニル', short:'フェンタ', unit:'ng/mL', cmax:10,
+      models:{shafer:['Shafer 1990',pkFentanyl]},
+      dose:{bMax:5,bStep:0.5,bDef:2, rMax:0.2,rStep:0.01,rDef:0}}
+  };
 
   /* 3-compartment + effect-site, RK4 */
   function deriv(A,pk,inf){ var A1=A[0],A2=A[1],A3=A[2],Ce=A[3];
@@ -502,39 +532,62 @@
     return [ A[0]+dt/6*(k1[0]+2*k2[0]+2*k3[0]+k4[0]), A[1]+dt/6*(k1[1]+2*k2[1]+2*k3[1]+k4[1]),
              A[2]+dt/6*(k1[2]+2*k2[2]+2*k3[2]+k4[2]), A[3]+dt/6*(k1[3]+2*k2[3]+2*k3[3]+k4[3]) ]; }
 
-  /* ===================== TAB 2: simulator ===================== */
+  /* ===================== TAB ①: simulator ===================== */
   var simSex=true, simSel='lor', simData=[], simTmax=15, simTTT=null, simAge=50;
+  var simHyp='propofol', simHypModel='schnider', simOp='remifentanil', simOpModel='minto';
   var SIM_PRESETS=[
     {n:'ショット導入＋レミ持続',pb:2.0,pr:0,rb:0.5,rr:0.25},
     {n:'持続導入(infusion only)',pb:0,pr:10,rb:0,rr:0.3},
     {n:'TIVA維持の例',pb:0,pr:6,rb:0,rr:0.2},
     {n:'レミ単独ボーラス',pb:0,pr:0,rb:1.0,rr:0}
   ];
+  function optsHTML(obj,sel){ var s=''; for(var k in obj){ s+='<option value="'+k+'"'+(k===sel?' selected':'')+'>'+obj[k].name+'</option>'; } return s; }
+  function modelOptsHTML(drug,sel){ var m=drug.models,s=''; for(var k in m){ s+='<option value="'+k+'"'+(k===sel?' selected':'')+'>'+m[k][0]+'</option>'; } return s; }
+  function isValidatedPair(){ return simHyp==='propofol' && simOp==='remifentanil'; }
   (function initSim(){
     var seg=''; order.forEach(function(k){ seg+='<button data-k="'+k+'" style="--c:'+EP[k].color+';background:'+EP[k].color+'22;border-color:'+EP[k].color+'66;color:'+EP[k].color+'" aria-pressed="'+(k===simSel)+'" onclick="setSimSel(\''+k+'\')">'+EP[k].name+'</button>'; });
     $('simEpSeg').innerHTML=seg;
     var pre=''; SIM_PRESETS.forEach(function(p,i){ pre+='<button onclick="simPreset('+i+')">'+p.n+'</button>'; }); $('simPreset').innerHTML=pre;
+    $('selHyp').innerHTML=optsHTML(HYP,simHyp); $('selOp').innerHTML=optsHTML(OP,simOp);
+    $('selHypModel').innerHTML=modelOptsHTML(HYP[simHyp],simHypModel);
+    $('selOpModel').innerHTML=modelOptsHTML(OP[simOp],simOpModel);
+    applyDoseAttrs();
   })();
   function setSex(m){ simSex=m; $('sexM').setAttribute('aria-pressed',m); $('sexF').setAttribute('aria-pressed',!m); simRun(); }
   function setSimSel(k){ simSel=k; document.querySelectorAll('#simEpSeg button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-k')===k);}); simRender(); }
-  function simPreset(i){ var p=SIM_PRESETS[i]; $('dPropB').value=p.pb; $('dPropR').value=p.pr; $('dRemiB').value=p.rb; $('dRemiR').value=p.rr; simRun(); }
+  function simPreset(i){ var p=SIM_PRESETS[i]; $('dHypB').value=p.pb; $('dHypR').value=p.pr; $('dOpB').value=p.rb; $('dOpR').value=p.rr; simRun(); }
+  function applyDoseAttrs(){
+    var h=HYP[simHyp].dose, o=OP[simOp].dose;
+    var hb=$('dHypB'); hb.max=h.bMax; hb.step=h.bStep; var hr=$('dHypR'); hr.max=h.rMax; hr.step=h.rStep;
+    var ob=$('dOpB'); ob.max=o.bMax; ob.step=o.bStep; var orr=$('dOpR'); orr.max=o.rMax; orr.step=o.rStep;
+    $('lblHypB').textContent=HYP[simHyp].name; $('lblHypR').textContent=HYP[simHyp].name;
+    $('lblOpB').textContent=OP[simOp].name; $('lblOpR').textContent=OP[simOp].name;
+  }
+  function onHypChange(){ simHyp=$('selHyp').value; simHypModel=Object.keys(HYP[simHyp].models)[0];
+    $('selHypModel').innerHTML=modelOptsHTML(HYP[simHyp],simHypModel);
+    var h=HYP[simHyp].dose; $('dHypB').value=h.bDef; $('dHypR').value=h.rDef; applyDoseAttrs(); simRun(); }
+  function onOpChange(){ simOp=$('selOp').value; simOpModel=Object.keys(OP[simOp].models)[0];
+    $('selOpModel').innerHTML=modelOptsHTML(OP[simOp],simOpModel);
+    var o=OP[simOp].dose; $('dOpB').value=o.bDef; $('dOpR').value=o.rDef; applyDoseAttrs(); simRun(); }
 
   function simRun(){
+    simHyp=$('selHyp').value; simOp=$('selOp').value; simHypModel=$('selHypModel').value; simOpModel=$('selOpModel').value;
     var age=clamp(+$('ipAge').value,18,100), wt=clamp(+$('ipWt').value,30,200), ht=clamp(+$('ipHt').value,120,210);
     simAge=age;
-    var pkP=PROP_MODELS[$('mdlProp').value](age,wt,ht,simSex);
-    var pkR=REMI_MODELS[$('mdlRemi').value](age,wt,ht,simSex);
-    var propB=(+$('dPropB').value)*wt, propR=(+$('dPropR').value)*wt/60;   // mg bolus ; mg/min infusion
-    var remiB=(+$('dRemiB').value)*wt, remiR=(+$('dRemiR').value)*wt;       // µg bolus ; µg/min infusion
+    var pkP=HYP[simHyp].models[simHypModel][1](age,wt,ht,simSex);
+    var pkR=OP[simOp].models[simOpModel][1](age,wt,ht,simSex);
+    var hypB=(+$('dHypB').value)*wt, hypR=(+$('dHypR').value)*wt/60;   // mg bolus ; mg/min infusion
+    var opB=(+$('dOpB').value)*wt,  opR=(+$('dOpR').value)*wt;         // µg bolus ; µg/min infusion
     simTmax=+$('simHorizon').value;
     var dt=1/60;   // 1-second steps; record every second for second-resolution scrub
-    var AP=[propB,0,0,0], AR=[remiB,0,0,0];
+    var AP=[hypB,0,0,0], AR=[opB,0,0,0];
     simData=[{t:0,ceP:0,ceR:0}];
     var n=Math.round(simTmax*60);
-    for(var i=1;i<=n;i++){ AP=rk4(AP,pkP,propR,dt); AR=rk4(AR,pkR,remiR,dt);
+    for(var i=1;i<=n;i++){ AP=rk4(AP,pkP,hypR,dt); AR=rk4(AR,pkR,opR,dt);
       simData.push({t:i*dt, ceP:AP[3], ceR:AR[3]}); }
-    // BMI warning for Schnider/Minto (James LBM)
-    var bmi=wt/Math.pow(ht/100,2); var jamesUsed=($('mdlProp').value!=='eleveld')||($('mdlRemi').value!=='eleveld');
+    // BMI warning for James-LBM models (Schnider / Minto)
+    var bmi=wt/Math.pow(ht/100,2);
+    var jamesUsed=(simHyp==='propofol'&&simHypModel==='schnider')||(simOp==='remifentanil'&&simOpModel==='minto');
     if(jamesUsed&&bmi>=35){ $('bmiWarn').classList.add('show'); $('bmiWarn').textContent='BMI '+bmi.toFixed(1)+'：Schnider/Minto は James式LBMを使うため高度肥満で精度が低下します。Eleveld の併用を検討してください。'; }
     else $('bmiWarn').classList.remove('show');
     $('simT').max=simTmax*60; if(+$('simT').value>simTmax*60)$('simT').value=simTmax*60;
@@ -543,17 +596,34 @@
   function clamp(v,a,b){ if(isNaN(v))return a; return Math.max(a,Math.min(b,v)); }
 
   function simRender(){
-    var e=EP[simSel], T=+$('simTarget').value;
-    $('simIsoLab').textContent=Math.round(T*100)+'%';
-    $('nowPlab').textContent=e.name.replace('に無反応','').replace(' (無反応 OAA/S<2)','')+' 無反応';
-    // time to target
-    simTTT=null; for(var i=0;i<simData.length;i++){ if(prob(simData[i].ceP,simData[i].ceR,e)>=T){ simTTT=simData[i]; break; } }
-    $('tttLab').textContent=e.name+'で「'+Math.round(T*100)+'% 無反応」に到達するまで';
-    if(simTTT){ $('tttBig').classList.remove('miss'); $('tttBig').textContent=fmtTime(simTTT.t);
-      $('tttMeta').innerHTML='到達時の Ce ＝ プロポフォール <b>'+simTTT.ceP.toFixed(2)+'</b> µg/mL ／ レミフェンタニル <b>'+simTTT.ceR.toFixed(2)+'</b> ng/mL ／ 予測BIS <b>'+Math.round(eleveldBIS(simTTT.ceP,simAge))+'</b>'; }
-    else { var last=simData[simData.length-1]; var pLast=Math.round(prob(last.ceP,last.ceR,e)*100);
-      $('tttBig').classList.add('miss'); $('tttBig').textContent='この設定では '+simTmax+'分以内に未到達';
-      $('tttMeta').innerHTML=simTmax+'分時点で '+pLast+'%（Ce プロポ <b>'+last.ceP.toFixed(2)+'</b> / レミ <b>'+last.ceR.toFixed(2)+'</b>）。投与量や目標％を見直してください。'; }
+    var v=isValidatedPair();
+    // banner + show/hide surface-only UI for non-validated pairs
+    $('pairBanner').style.display=v?'none':'block';
+    if(!v){ $('pairBanner').innerHTML='選択した「'+HYP[simHyp].name+' × '+OP[simOp].name+'」には<b>検証済みの相乗（無反応%）応答曲面がありません</b>。効果部位濃度（と鎮静の目安）のみ表示します。'+(simHyp==='remimazolam'&&simOp==='remifentanil'?' ※レミマゾラム×レミフェンタニルは検証済みモデル(Vellinga 2025)があり、別途実装予定です。':''); }
+    ['epBlock','targetFld','tttBox','surfCol','simPresetWrap'].forEach(function(id){ $(id).style.display=v?'':'none'; });
+    $('simLayout').classList.toggle('solo',!v);
+    $('tileP').style.display=v?'':'none'; $('lgPwrap').style.display=v?'':'none'; $('lgTtt').style.display=v?'':'none';
+    // adaptive labels
+    $('kHypCe').textContent=HYP[simHyp].name+' Ce'; $('kOpCe').textContent=OP[simOp].name+' Ce';
+    $('lgHyp').textContent='Ce '+HYP[simHyp].short; $('lgOp').textContent='Ce '+OP[simOp].short;
+    var dk=HYP[simHyp].depth;
+    $('tileDepth').style.display=(dk==='none')?'none':''; $('lgDepthWrap').style.display=(dk==='none')?'none':'';
+    $('lgBand').style.display=(dk==='bis')?'':'none';
+    if(dk==='bis'){ $('kDepth').textContent='予測BIS'; $('lgDepth').textContent='予測BIS'; }
+    else if(dk==='loc'){ $('kDepth').textContent='意識消失確率'; $('lgDepth').textContent='意識消失確率'; }
+    // TTT / surface readouts (validated pair only)
+    if(v){
+      var e=EP[simSel], T=+$('simTarget').value;
+      $('simIsoLab').textContent=Math.round(T*100)+'%';
+      $('nowPlab').textContent=e.name.replace('に無反応','').replace(' (無反応 OAA/S<2)','')+' 無反応';
+      simTTT=null; for(var i=0;i<simData.length;i++){ if(prob(simData[i].ceP,simData[i].ceR,e)>=T){ simTTT=simData[i]; break; } }
+      $('tttLab').textContent=e.name+'で「'+Math.round(T*100)+'% 無反応」に到達するまで';
+      if(simTTT){ $('tttBig').classList.remove('miss'); $('tttBig').textContent=fmtTime(simTTT.t);
+        $('tttMeta').innerHTML='到達時の Ce ＝ プロポフォール <b>'+simTTT.ceP.toFixed(2)+'</b> µg/mL ／ レミフェンタニル <b>'+simTTT.ceR.toFixed(2)+'</b> ng/mL ／ 予測BIS <b>'+Math.round(eleveldBIS(simTTT.ceP,simAge))+'</b>'; }
+      else { var last=simData[simData.length-1]; var pLast=Math.round(prob(last.ceP,last.ceR,e)*100);
+        $('tttBig').classList.add('miss'); $('tttBig').textContent='この設定では '+simTmax+'分以内に未到達';
+        $('tttMeta').innerHTML=simTmax+'分時点で '+pLast+'%（Ce プロポ <b>'+last.ceP.toFixed(2)+'</b> / レミ <b>'+last.ceR.toFixed(2)+'</b>）。投与量や目標％を見直してください。'; }
+    } else { simTTT=null; }
     if(+$('simT').value>simTmax*60)$('simT').value=simTmax*60;
     simScrub();
   }
@@ -562,11 +632,13 @@
   function atTime(t){ if(!simData.length)return {ceP:0,ceR:0}; var idx=Math.round(t*60); idx=Math.max(0,Math.min(simData.length-1,idx)); return simData[idx]; }
   function simScrub(){
     var t=scrubT(); $('simTV').textContent=fmtTime(t);
-    var pt=atTime(t), e=EP[simSel];
+    var pt=atTime(t), v=isValidatedPair();
     $('nowCp').textContent=pt.ceP.toFixed(2); $('nowCr').textContent=pt.ceR.toFixed(2);
-    var pr=Math.round(prob(pt.ceP,pt.ceR,e)*100); $('nowP').textContent=pr+'%'; $('nowP').style.color=e.color;
-    var bis=Math.round(eleveldBIS(pt.ceP,simAge)); $('nowBIS').textContent=bis; $('nowBIS').style.color=bisColor(bis);
-    drawSurface($('cvSim'),e,{traj:simData,target:+$('simTarget').value,cp:pt.ceP,cr:pt.ceR});
+    if(v){ var e=EP[simSel]; var pr=Math.round(prob(pt.ceP,pt.ceR,e)*100); $('nowP').textContent=pr+'%'; $('nowP').style.color=e.color; }
+    var dk=HYP[simHyp].depth;
+    if(dk==='bis'){ var b=Math.round(eleveldBIS(pt.ceP,simAge)); $('nowBIS').textContent=b; $('nowBIS').style.color=bisColor(b); }
+    else if(dk==='loc'){ var l=Math.round(100*remimazLOC(pt.ceP)); $('nowBIS').textContent=l+'%'; $('nowBIS').style.color='var(--teal)'; }
+    if(v){ drawSurface($('cvSim'),EP[simSel],{traj:simData,target:+$('simTarget').value,cp:pt.ceP,cr:pt.ceR}); }
     drawTC();
   }
 
@@ -581,20 +653,22 @@
     for(var g=0;g<=4;g++){var y=padT.t+ph*g/4;c.beginPath();c.moveTo(padT.l,y);c.lineTo(padT.l+pw,y);c.stroke();}
     c.strokeStyle='#26344f';c.strokeRect(padT.l,padT.t,pw,ph);
     if(simData.length>1){
-      var e=EP[simSel];
-      // BIS 40-60 target band (BIS/100 = 0.40-0.60)
-      c.fillStyle='rgba(52,211,153,.10)'; c.fillRect(padT.l,yP(0.6),pw,yP(0.4)-yP(0.6));
+      var v=isValidatedPair(), dk=HYP[simHyp].depth, hcmax=HYP[simHyp].cmax, ocmax=OP[simOp].cmax;
       function line(col,w,fn){ c.strokeStyle=col;c.lineWidth=w;c.beginPath(); for(var i=0;i<simData.length;i++){var X=xOf(simData[i].t),Y=yP(fn(simData[i]));if(i===0)c.moveTo(X,Y);else c.lineTo(X,Y);} c.stroke(); }
-      line('#f5a524',1.8,function(d){return Math.min(1,eleveldBIS(d.ceP,simAge)/100);});
-      line('#2dd4bf',2,function(d){return Math.min(1,d.ceP/CPMAX);});
-      line('#a78bfa',2,function(d){return Math.min(1,d.ceR/CRMAX);});
-      line('#e9eef7',2.2,function(d){return prob(d.ceP,d.ceR,e);});
-      // target line
-      var T=+$('simTarget').value; c.strokeStyle='rgba(233,238,247,.4)';c.lineWidth=1;c.setLineDash([4,3]);
-      c.beginPath();c.moveTo(padT.l,yP(T));c.lineTo(padT.l+pw,yP(T));c.stroke();c.setLineDash([]);
-      // time-to-target marker
-      if(simTTT){ var Xt=xOf(simTTT.t); c.strokeStyle='var(--green)';c.strokeStyle='#34d399';c.lineWidth=1.4;c.setLineDash([3,3]);
-        c.beginPath();c.moveTo(Xt,padT.t);c.lineTo(Xt,padT.t+ph);c.stroke();c.setLineDash([]); }
+      // depth indicator (propofol=BIS w/ 40-60 band; remimazolam=P(LOC))
+      if(dk==='bis'){ c.fillStyle='rgba(52,211,153,.10)'; c.fillRect(padT.l,yP(0.6),pw,yP(0.4)-yP(0.6));
+        line('#f5a524',1.8,function(d){return Math.min(1,eleveldBIS(d.ceP,simAge)/100);}); }
+      else if(dk==='loc'){ line('#f5a524',1.8,function(d){return remimazLOC(d.ceP);}); }
+      // Ce traces normalized to each drug's display scale
+      line('#2dd4bf',2,function(d){return Math.min(1,d.ceP/hcmax);});
+      line('#a78bfa',2,function(d){return Math.min(1,d.ceR/ocmax);});
+      // no-response% + target + TTT (validated pair only)
+      if(v){ var e=EP[simSel];
+        line('#e9eef7',2.2,function(d){return prob(d.ceP,d.ceR,e);});
+        var T=+$('simTarget').value; c.strokeStyle='rgba(233,238,247,.4)';c.lineWidth=1;c.setLineDash([4,3]);
+        c.beginPath();c.moveTo(padT.l,yP(T));c.lineTo(padT.l+pw,yP(T));c.stroke();c.setLineDash([]);
+        if(simTTT){ var Xt=xOf(simTTT.t); c.strokeStyle='#34d399';c.lineWidth=1.4;c.setLineDash([3,3]);
+          c.beginPath();c.moveTo(Xt,padT.t);c.lineTo(Xt,padT.t+ph);c.stroke();c.setLineDash([]); } }
       // scrub marker
       var ts=scrubT(), Xs=xOf(ts); c.strokeStyle='rgba(203,213,225,.85)';c.lineWidth=1;
       c.beginPath();c.moveTo(Xs,padT.t);c.lineTo(Xs,padT.t+ph);c.stroke();
