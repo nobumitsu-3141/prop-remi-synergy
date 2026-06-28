@@ -1,5 +1,5 @@
 /* 相乗ナビ — service worker (network-first, cache fallback for offline) */
-const CACHE = 'propremi-v3';
+const CACHE = 'propremi-v4';
 const ASSETS = [
   './',
   'index.html',

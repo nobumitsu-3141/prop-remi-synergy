@@ -121,6 +121,12 @@
   .now .it .k{font-size:10px;color:var(--muted)}
   .now .it .x{font-family:var(--mono);font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
 
+  .updrow{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .updbtn{background:var(--elev);border:1px solid var(--line);color:var(--teal);font-family:var(--ui);font-size:11.5px;font-weight:700;padding:7px 14px;min-height:34px;border-radius:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .updbtn:active{border-color:var(--teal)}
+  .updbtn:disabled{color:var(--dim);opacity:.7;cursor:default}
+  #appVer{font-size:11px;color:var(--dim);font-family:var(--mono)}
+
   details.refbox{margin-top:6px}
   details.refbox summary{font-size:11px;color:var(--muted);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;list-style:none;padding:4px 0}
   details.refbox summary::-webkit-details-marker{display:none}
@@ -230,7 +236,8 @@
     <div class="warn" id="pairBanner" style="display:none"></div>
 
     <div id="epBlock"><h3 style="margin-top:18px">目標とする刺激・反応</h3>
-    <div class="seg" id="simEpSeg"></div></div>
+    <div class="seg" id="simEpSeg"></div>
+    <p class="note" id="vNote" style="display:none;margin-top:8px;color:#8fb6c9"></p></div>
     <div class="grid2" style="margin-top:10px">
       <div class="fld" id="targetFld"><label>到達したい「無反応確率」</label>
         <select id="simTarget" onchange="simRender()"><option value="0.5">50%</option><option value="0.9">90%</option><option value="0.95" selected>95%</option><option value="0.99">99%</option></select>
@@ -280,13 +287,17 @@
     </div>
 
     <details class="refbox"><summary>PKモデルと式の出典</summary>
-      <p class="ref">効果部位濃度 Ce は3-コンパートメント＋効果部位（dCe/dt=k<sub>e0</sub>(C<sub>p</sub>−Ce)）をRK4積分。<b>Schnider</b> SL <i>Anesthesiology</i> 1998/99（k<sub>e0</sub>=0.456/min, LBM=James）；<b>Marsh</b> B <i>BJA</i> 1991（体重比例・modified k<sub>e0</sub>=1.2/min, Struys 2000）；<b>Eleveld</b> DJ <i>BJA</i> 2018（プロポ・Al-Sallami FFM・k<sub>e0</sub>=0.146·(wt/70)<sup>−0.25</sup>・オピオイド併用前提）。<b>Minto</b> CF <i>Anesthesiology</i> 1997（レミ・LBM=James, k<sub>e0</sub>=0.595−0.007(age−40)）；<b>Eleveld</b> DJ <i>Anesthesiology</i> 2017（レミ・Al-Sallami FFM, k<sub>e0</sub>=1.09·e<sup>−0.0289(age−35)</sup>）。<b>予測BIS</b>＝Eleveld 2018 PD（Ce50=3.08·e<sup>−0.00635(age−35)</sup>, E0=93, γ=1.89/1.47）をプロポフォール Ce に適用（Schnider/Marsh選択時はそのCeを使う近似）。<b>フェンタニル</b>＝Shafer <i>Anesthesiology</i> 1990（V1 6.09 L, k<sub>e0</sub>=0.147/min＝文献上の選択値）。<b>レミマゾラム</b>＝Schüttler <i>Anesthesiology</i> 2020（V1 4.39 L, k<sub>e0</sub>=0.27/min；意識消失確率＝MOAA/S≤1, Ce50 0.65 µg/mL, γ3.6）。<b>チアミラール(イソゾール)</b>＝専用モデルが無く、構造の近い<b>チオペンタール</b>（Stanski/Maitre <i>Anesthesiology</i> 1990, k<sub>e0</sub>=0.59/min）で代用した教育用近似。<b>相乗（無反応%）応答曲面は検証済みのプロポフォール×レミフェンタニル（Kern/Johnson）のみ</b>表示。他の組合せはCe（と鎮静の目安）のみ。レミマゾラム×レミフェンタニルは検証済み相互作用モデル（Vellinga <i>Anesthesiology</i> 2025）があり別途追加予定。応答曲面のC50は②タブ参照（PD）。</p>
+      <p class="ref">効果部位濃度 Ce は3-コンパートメント＋効果部位（dCe/dt=k<sub>e0</sub>(C<sub>p</sub>−Ce)）をRK4積分。<b>Schnider</b> SL <i>Anesthesiology</i> 1998/99（k<sub>e0</sub>=0.456/min, LBM=James）；<b>Marsh</b> B <i>BJA</i> 1991（体重比例・modified k<sub>e0</sub>=1.2/min, Struys 2000）；<b>Eleveld</b> DJ <i>BJA</i> 2018（プロポ・Al-Sallami FFM・k<sub>e0</sub>=0.146·(wt/70)<sup>−0.25</sup>・オピオイド併用前提）。<b>Minto</b> CF <i>Anesthesiology</i> 1997（レミ・LBM=James, k<sub>e0</sub>=0.595−0.007(age−40)）；<b>Eleveld</b> DJ <i>Anesthesiology</i> 2017（レミ・Al-Sallami FFM, k<sub>e0</sub>=1.09·e<sup>−0.0289(age−35)</sup>）。<b>予測BIS</b>＝Eleveld 2018 PD（Ce50=3.08·e<sup>−0.00635(age−35)</sup>, E0=93, γ=1.89/1.47）をプロポフォール Ce に適用（Schnider/Marsh選択時はそのCeを使う近似）。<b>フェンタニル</b>＝Shafer <i>Anesthesiology</i> 1990（V1 6.09 L, k<sub>e0</sub>=0.147/min＝文献上の選択値）。<b>レミマゾラム</b>＝Schüttler <i>Anesthesiology</i> 2020（V1 4.39 L, k<sub>e0</sub>=0.27/min；意識消失確率＝MOAA/S≤1, Ce50 0.65 µg/mL, γ3.6）。<b>チアミラール(イソゾール)</b>＝専用モデルが無く、構造の近い<b>チオペンタール</b>（Stanski/Maitre <i>Anesthesiology</i> 1990, k<sub>e0</sub>=0.59/min）で代用した教育用近似。<b>相乗（無反応%）応答曲面</b>は検証済みの2組のみ：<b>プロポフォール×レミフェンタニル</b>（Kern/Johnson, Greco）と<b>レミマゾラム×レミフェンタニル</b>（<b>Vellinga</b> <i>Anesthesiology</i> 2025；意識消失=MOAA/S・喉頭鏡=TOL・テタヌス=TOTS、比例オッズ/ロジスティック、<b>教育用・急性耐性=代謝物CNS7054を簡略化(=0,投与初期相当)</b>）。その他の組合せはCe（と鎮静の目安）のみ。プロポフォール×フェンタニルは検証済みGreco曲面が存在しない。応答曲面のC50は②タブ参照（PD）。</p>
     </details>
   </div>
   </section>
 
-  <div class="disc"><b>注意：</b>母集団薬力学（応答曲面）と母集団薬物動態（PK）モデルに基づく確率・濃度の<b>推定</b>です。Ce は選んだPKモデルに依存し、C50 は元論文が用いたモデルで較正されているため、絶対値の整合は保証されません。プリセット・予測時間は概念理解のための例であり、投与量や導入時間の推奨ではありません。実際の麻酔は臨床的観察(BIS・体動・自律神経反応・血圧)と併せて判断してください。Schnider/Minto は高度肥満でLBM(James式)が破綻しえます。<b>チアミラール(イソゾール)は専用モデルが無いためチオペンタールで代用した近似</b>です。相乗（無反応%）応答曲面は検証済みのプロポフォール×レミフェンタニルのみに表示し、他の組合せは効果部位濃度のみ示します。</div>
+  <div class="disc"><b>注意：</b>母集団薬力学（応答曲面）と母集団薬物動態（PK）モデルに基づく確率・濃度の<b>推定</b>です。Ce は選んだPKモデルに依存し、C50 は元論文が用いたモデルで較正されているため、絶対値の整合は保証されません。プリセット・予測時間は概念理解のための例であり、投与量や導入時間の推奨ではありません。実際の麻酔は臨床的観察(BIS・体動・自律神経反応・血圧)と併せて判断してください。Schnider/Minto は高度肥満でLBM(James式)が破綻しえます。<b>チアミラール(イソゾール)は専用モデルが無いためチオペンタールで代用した近似</b>です。相乗（無反応%）応答曲面は検証済みの<b>プロポフォール×レミフェンタニル</b>と<b>レミマゾラム×レミフェンタニル</b>（Vellinga 2025・教育用・急性耐性簡略化）のみに表示し、他の組合せは効果部位濃度のみ示します。</div>
   <p class="note" style="text-align:center;color:var(--dim);font-size:11px;margin-top:-4px">オフライン対応 · ホーム画面に追加して全画面アプリとして使用できます</p>
+  <div class="updrow">
+    <span id="appVer">—</span>
+    <button id="updBtn" class="updbtn" onclick="forceUpdate()">最新版に更新</button>
+  </div>
 </main>
 
 <script>
@@ -370,6 +381,46 @@
     c.save();c.translate(14,padS.t+ph/2);c.rotate(-Math.PI/2);c.fillStyle='#9aa7b8';c.textAlign='center';c.textBaseline='top';c.fillText('レミフェンタニル Ce  (ng/mL)',0,0);c.restore();
     c.textAlign='right';c.textBaseline='middle';
     for(var gy=0;gy<=4;gy++){var vy=gy/4*CRMAX;c.fillStyle='#6c7b95';c.fillText(vy.toFixed(0),padS.l-6,yOf(vy));}
+  }
+
+  /* Vellinga surface renderer: heatmap + numeric isoboles. x=remimazolam µg/mL, y=remifentanil ng/mL */
+  function drawSurfV(cv,ep,opt){
+    opt=opt||{}; var s=dpi(cv), c=s.c, W=s.w, H=s.h; if(W<10)return;
+    c.clearRect(0,0,W,H);
+    var pw=W-padS.l-padS.r, ph=H-padS.t-padS.b;
+    var xOf=function(v){return padS.l+(v/VXMAX)*pw;}, yOf=function(v){return padS.t+ph-(v/VYMAX)*ph;};
+    var P=function(vx,vy){return ep.prob(vx*1000,vy);};   // vx µg/mL -> ng/mL
+    var step=5;
+    for(var px=0;px<pw;px+=step){ for(var py=0;py<ph;py+=step){
+      var vx=(px+step/2)/pw*VXMAX, vy=VYMAX-((py+step/2)/ph*VYMAX);
+      c.fillStyle=colr(P(vx,vy)); c.fillRect(padS.l+px,padS.t+py,step+1,step+1); } }
+    c.strokeStyle='#26344f';c.lineWidth=1;c.strokeRect(padS.l,padS.t,pw,ph);
+    function crossY(vx,T){ if(P(vx,0)>=T||P(vx,VYMAX)<T)return null; var lo=0,hi=VYMAX;
+      for(var it=0;it<24;it++){ var mid=(lo+hi)/2; if(P(vx,mid)<T)lo=mid; else hi=mid; } return (lo+hi)/2; }
+    function isobole(T,dash){ c.strokeStyle='#fff';c.lineWidth=dash?1.6:2.2;c.setLineDash(dash?[5,4]:[]);
+      c.beginPath(); var started=false;
+      for(var i=0;i<=160;i++){ var vx=i/160*VXMAX, vy=crossY(vx,T);
+        if(vy==null){ started=false; continue; } var X=xOf(vx),Y=yOf(vy);
+        if(!started){c.moveTo(X,Y);started=true;}else c.lineTo(X,Y); }
+      c.stroke(); c.setLineDash([]); }
+    function isoLabel(T,txt){ for(var f=0.62;f>0.04;f-=0.04){ var vx=f*VXMAX, vy=crossY(vx,T);
+      if(vy==null||vy<VYMAX*0.04||vy>VYMAX*0.96)continue; var X=xOf(vx),Y=yOf(vy);
+      c.font='600 10px '+mono();c.textAlign='center';c.textBaseline='middle';
+      var tw=c.measureText(txt).width; c.fillStyle='rgba(8,14,22,.78)';c.fillRect(X-tw/2-3,Y-8,tw+6,16);
+      c.fillStyle='#dfe8f4';c.fillText(txt,X,Y); return; } }
+    isobole(0.5,true); isoLabel(0.5,'50%');
+    var topT=(opt.target!=null)?opt.target:0.95; isobole(topT,false); isoLabel(topT,Math.round(topT*100)+'%');
+    if(opt.traj&&opt.traj.length>1){ c.strokeStyle='rgba(223,232,244,.92)';c.lineWidth=2.4;c.beginPath();
+      for(var j=0;j<opt.traj.length;j++){ var Q=opt.traj[j]; var X=xOf(Math.min(VXMAX,Q.ceP)),Y=yOf(Math.min(VYMAX,Q.ceR)); if(j===0)c.moveTo(X,Y);else c.lineTo(X,Y);} c.stroke();
+      var p0=opt.traj[0]; c.fillStyle='#64748b'; c.beginPath();c.arc(xOf(Math.min(VXMAX,p0.ceP)),yOf(Math.min(VYMAX,p0.ceR)),3,0,7);c.fill(); }
+    if(opt.cp!=null){ var X2=xOf(Math.min(VXMAX,opt.cp)),Y2=yOf(Math.min(VYMAX,opt.cr));
+      c.fillStyle=ep.color;c.strokeStyle='#fff';c.lineWidth=2.5;c.beginPath();c.arc(X2,Y2,8,0,7);c.fill();c.stroke(); }
+    c.fillStyle='#9aa7b8';c.font='11px '+mono();c.textAlign='center';c.textBaseline='top';
+    c.fillText('レミマゾラム Ce  (µg/mL)',padS.l+pw/2,H-16);
+    for(var gx=0;gx<=4;gx++){var vv=gx/4*VXMAX;c.fillStyle='#6c7b95';c.textAlign='center';c.textBaseline='top';c.fillText(vv.toFixed(1),xOf(vv),padS.t+ph+4);}
+    c.save();c.translate(14,padS.t+ph/2);c.rotate(-Math.PI/2);c.fillStyle='#9aa7b8';c.textAlign='center';c.textBaseline='top';c.fillText('レミフェンタニル Ce  (ng/mL)',0,0);c.restore();
+    c.textAlign='right';c.textBaseline='middle';
+    for(var gy2=0;gy2<=4;gy2++){var vyy=gy2/4*VYMAX;c.fillStyle='#6c7b95';c.fillText(vyy.toFixed(0),padS.l-6,yOf(vyy));}
   }
 
   /* ===================== TAB 1: manual surface ===================== */
@@ -521,6 +572,23 @@
       dose:{bMax:5,bStep:0.5,bDef:2, rMax:0.2,rStep:0.01,rDef:0}}
   };
 
+  /* Vellinga 2025 (Anesthesiology 142:666) remimazolam×remifentanil interaction.
+     Concentrations in ng/mL. Educational: acute tolerance (metabolite CNS7054) 簡略化=0（≈投与初期）. */
+  function vDriveMOAAS(rmz,remi){ var rm=Math.pow(rmz/211,1.75); var de=rm/(1+rm); return de*(1+remi/2.5); }
+  function vMOAASleq(k,rmz,remi){ var th=[-9.7,-7.7,-6.6,-5.8,-3.6]; return 1/(1+Math.exp(-(th[k]+11.7*vDriveMOAAS(rmz,remi)))); }
+  function vLOC(rmz,remi){ return vMOAASleq(1,rmz,remi); }                                  // P(MOAA/S≤1)=意識消失
+  function vTOL(rmz,remi){ var c50=54128*(1-remi/(remi+0.02)); var u=rmz/c50; return u/(1+u); }
+  function vTOTS(rmz,remi){ var c50=12133*(1-remi/(remi+0.04)); var u=rmz/c50; return u/(1+u); }
+  var VEP={
+    vlor: {name:'意識消失 (MOAA/S≤1)', color:'#2dd4bf', prob:vLOC},
+    vtol: {name:'喉頭鏡・挿管に無反応 (TOL)', color:'#a78bfa', prob:vTOL},
+    vtots:{name:'電気テタヌス(皮切相当)に無反応 (TOTS)', color:'#f5a524', prob:vTOTS}
+  };
+  var vorder=['vlor','vtol','vtots'];
+  var VXMAX=2, VYMAX=8;   // x=remimazolam µg/mL ; y=remifentanil ng/mL
+  function pairModel(){ if(simHyp==='propofol'&&simOp==='remifentanil')return 'greco';
+    if(simHyp==='remimazolam'&&simOp==='remifentanil')return 'vellinga'; return null; }
+
   /* 3-compartment + effect-site, RK4 */
   function deriv(A,pk,inf){ var A1=A[0],A2=A[1],A3=A[2],Ce=A[3];
     return [ inf-(pk.k10+pk.k12+pk.k13)*A1+pk.k21*A2+pk.k31*A3, pk.k12*A1-pk.k21*A2, pk.k13*A1-pk.k31*A3, pk.ke0*(A1/pk.V1-Ce) ]; }
@@ -533,7 +601,7 @@
              A[2]+dt/6*(k1[2]+2*k2[2]+2*k3[2]+k4[2]), A[3]+dt/6*(k1[3]+2*k2[3]+2*k3[3]+k4[3]) ]; }
 
   /* ===================== TAB ①: simulator ===================== */
-  var simSex=true, simSel='lor', simData=[], simTmax=15, simTTT=null, simAge=50;
+  var simSex=true, simSel='lor', simVSel='vlor', simData=[], simTmax=15, simTTT=null, simAge=50;
   var simHyp='propofol', simHypModel='schnider', simOp='remifentanil', simOpModel='minto';
   var SIM_PRESETS=[
     {n:'ショット導入＋レミ持続',pb:2.0,pr:0,rb:0.5,rr:0.25},
@@ -543,18 +611,26 @@
   ];
   function optsHTML(obj,sel){ var s=''; for(var k in obj){ s+='<option value="'+k+'"'+(k===sel?' selected':'')+'>'+obj[k].name+'</option>'; } return s; }
   function modelOptsHTML(drug,sel){ var m=drug.models,s=''; for(var k in m){ s+='<option value="'+k+'"'+(k===sel?' selected':'')+'>'+m[k][0]+'</option>'; } return s; }
-  function isValidatedPair(){ return simHyp==='propofol' && simOp==='remifentanil'; }
+  function isValidatedPair(){ return pairModel()!==null; }
+  function curEPset(){ return pairModel()==='vellinga' ? VEP : EP; }
+  function curOrder(){ return pairModel()==='vellinga' ? vorder : order; }
+  function curSelKey(){ return pairModel()==='vellinga' ? simVSel : simSel; }
+  function curEP(){ return curEPset()[curSelKey()]; }
+  function curProb(ceP,ceR){ var pm=pairModel(); if(pm==='vellinga')return VEP[simVSel].prob(ceP*1000,ceR); if(pm==='greco')return prob(ceP,ceR,EP[simSel]); return 0; }
+  function depthKind(){ if(simHyp==='propofol')return 'bis'; if(simHyp==='remimazolam')return (pairModel()==='vellinga')?'vloc':'loc'; return 'none'; }
+  function buildSimEp(){ var set=curEPset(), ord=curOrder(), selKey=curSelKey(), seg='';
+    ord.forEach(function(k){ seg+='<button data-k="'+k+'" style="--c:'+set[k].color+';background:'+set[k].color+'22;border-color:'+set[k].color+'66;color:'+set[k].color+'" aria-pressed="'+(k===selKey)+'" onclick="setSimSel(\''+k+'\')">'+set[k].name+'</button>'; });
+    $('simEpSeg').innerHTML=seg; }
   (function initSim(){
-    var seg=''; order.forEach(function(k){ seg+='<button data-k="'+k+'" style="--c:'+EP[k].color+';background:'+EP[k].color+'22;border-color:'+EP[k].color+'66;color:'+EP[k].color+'" aria-pressed="'+(k===simSel)+'" onclick="setSimSel(\''+k+'\')">'+EP[k].name+'</button>'; });
-    $('simEpSeg').innerHTML=seg;
     var pre=''; SIM_PRESETS.forEach(function(p,i){ pre+='<button onclick="simPreset('+i+')">'+p.n+'</button>'; }); $('simPreset').innerHTML=pre;
     $('selHyp').innerHTML=optsHTML(HYP,simHyp); $('selOp').innerHTML=optsHTML(OP,simOp);
     $('selHypModel').innerHTML=modelOptsHTML(HYP[simHyp],simHypModel);
     $('selOpModel').innerHTML=modelOptsHTML(OP[simOp],simOpModel);
-    applyDoseAttrs();
+    $('vNote').innerHTML='この組合せは <b>Vellinga 2025</b>（Anesthesiology）の検証済み相互作用モデル。意識消失(MOAA/S)は堅牢、喉頭鏡(TOL)・テタヌス(TOTS)は著者も濃度推奨を控える程度の確からしさ。<b>急性耐性（代謝物CNS7054）は簡略化＝投与初期に相当</b>し、時間経過で実際はやや浅め（反応しやすめ）寄りになります。';
+    buildSimEp(); applyDoseAttrs();
   })();
   function setSex(m){ simSex=m; $('sexM').setAttribute('aria-pressed',m); $('sexF').setAttribute('aria-pressed',!m); simRun(); }
-  function setSimSel(k){ simSel=k; document.querySelectorAll('#simEpSeg button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-k')===k);}); simRender(); }
+  function setSimSel(k){ if(pairModel()==='vellinga') simVSel=k; else simSel=k; document.querySelectorAll('#simEpSeg button').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-k')===k);}); simRender(); }
   function simPreset(i){ var p=SIM_PRESETS[i]; $('dHypB').value=p.pb; $('dHypR').value=p.pr; $('dOpB').value=p.rb; $('dOpR').value=p.rr; simRun(); }
   function applyDoseAttrs(){
     var h=HYP[simHyp].dose, o=OP[simOp].dose;
@@ -565,10 +641,10 @@
   }
   function onHypChange(){ simHyp=$('selHyp').value; simHypModel=Object.keys(HYP[simHyp].models)[0];
     $('selHypModel').innerHTML=modelOptsHTML(HYP[simHyp],simHypModel);
-    var h=HYP[simHyp].dose; $('dHypB').value=h.bDef; $('dHypR').value=h.rDef; applyDoseAttrs(); simRun(); }
+    var h=HYP[simHyp].dose; $('dHypB').value=h.bDef; $('dHypR').value=h.rDef; applyDoseAttrs(); buildSimEp(); simRun(); }
   function onOpChange(){ simOp=$('selOp').value; simOpModel=Object.keys(OP[simOp].models)[0];
     $('selOpModel').innerHTML=modelOptsHTML(OP[simOp],simOpModel);
-    var o=OP[simOp].dose; $('dOpB').value=o.bDef; $('dOpR').value=o.rDef; applyDoseAttrs(); simRun(); }
+    var o=OP[simOp].dose; $('dOpB').value=o.bDef; $('dOpR').value=o.rDef; applyDoseAttrs(); buildSimEp(); simRun(); }
 
   function simRun(){
     simHyp=$('selHyp').value; simOp=$('selOp').value; simHypModel=$('selHypModel').value; simOpModel=$('selOpModel').value;
@@ -596,33 +672,35 @@
   function clamp(v,a,b){ if(isNaN(v))return a; return Math.max(a,Math.min(b,v)); }
 
   function simRender(){
-    var v=isValidatedPair();
-    // banner + show/hide surface-only UI for non-validated pairs
-    $('pairBanner').style.display=v?'none':'block';
-    if(!v){ $('pairBanner').innerHTML='選択した「'+HYP[simHyp].name+' × '+OP[simOp].name+'」には<b>検証済みの相乗（無反応%）応答曲面がありません</b>。効果部位濃度（と鎮静の目安）のみ表示します。'+(simHyp==='remimazolam'&&simOp==='remifentanil'?' ※レミマゾラム×レミフェンタニルは検証済みモデル(Vellinga 2025)があり、別途実装予定です。':''); }
-    ['epBlock','targetFld','tttBox','surfCol','simPresetWrap'].forEach(function(id){ $(id).style.display=v?'':'none'; });
+    var pm=pairModel(), v=(pm!==null);
+    // banner for non-validated pairs ; Vellinga note for the remimazolam×remi pair
+    $('pairBanner').style.display=(!v)?'block':'none';
+    if(!v){ $('pairBanner').innerHTML='選択した「'+HYP[simHyp].name+' × '+OP[simOp].name+'」には<b>検証済みの相乗（無反応%）応答曲面がありません</b>。効果部位濃度（と鎮静の目安）のみ表示します。'; }
+    $('vNote').style.display=(pm==='vellinga')?'block':'none';
+    ['epBlock','targetFld','tttBox','surfCol'].forEach(function(id){ $(id).style.display=v?'':'none'; });
+    $('simPresetWrap').style.display=(pm==='greco')?'':'none';     // presets are propofol×remi-tuned
     $('simLayout').classList.toggle('solo',!v);
     $('tileP').style.display=v?'':'none'; $('lgPwrap').style.display=v?'':'none'; $('lgTtt').style.display=v?'':'none';
     // adaptive labels
     $('kHypCe').textContent=HYP[simHyp].name+' Ce'; $('kOpCe').textContent=OP[simOp].name+' Ce';
     $('lgHyp').textContent='Ce '+HYP[simHyp].short; $('lgOp').textContent='Ce '+OP[simOp].short;
-    var dk=HYP[simHyp].depth;
+    var dk=depthKind();
     $('tileDepth').style.display=(dk==='none')?'none':''; $('lgDepthWrap').style.display=(dk==='none')?'none':'';
     $('lgBand').style.display=(dk==='bis')?'':'none';
     if(dk==='bis'){ $('kDepth').textContent='予測BIS'; $('lgDepth').textContent='予測BIS'; }
-    else if(dk==='loc'){ $('kDepth').textContent='意識消失確率'; $('lgDepth').textContent='意識消失確率'; }
-    // TTT / surface readouts (validated pair only)
+    else { $('kDepth').textContent='意識消失確率'; $('lgDepth').textContent='意識消失確率'; }
+    // TTT / surface readouts (validated pairs: greco or vellinga)
     if(v){
-      var e=EP[simSel], T=+$('simTarget').value;
+      var e=curEP(), T=+$('simTarget').value;
       $('simIsoLab').textContent=Math.round(T*100)+'%';
-      $('nowPlab').textContent=e.name.replace('に無反応','').replace(' (無反応 OAA/S<2)','')+' 無反応';
-      simTTT=null; for(var i=0;i<simData.length;i++){ if(prob(simData[i].ceP,simData[i].ceR,e)>=T){ simTTT=simData[i]; break; } }
+      $('nowPlab').textContent=e.name.replace(/\s*\([^)]*\)/,'').replace('に無反応','')+' 無反応';
+      simTTT=null; for(var i=0;i<simData.length;i++){ if(curProb(simData[i].ceP,simData[i].ceR)>=T){ simTTT=simData[i]; break; } }
       $('tttLab').textContent=e.name+'で「'+Math.round(T*100)+'% 無反応」に到達するまで';
       if(simTTT){ $('tttBig').classList.remove('miss'); $('tttBig').textContent=fmtTime(simTTT.t);
-        $('tttMeta').innerHTML='到達時の Ce ＝ プロポフォール <b>'+simTTT.ceP.toFixed(2)+'</b> µg/mL ／ レミフェンタニル <b>'+simTTT.ceR.toFixed(2)+'</b> ng/mL ／ 予測BIS <b>'+Math.round(eleveldBIS(simTTT.ceP,simAge))+'</b>'; }
-      else { var last=simData[simData.length-1]; var pLast=Math.round(prob(last.ceP,last.ceR,e)*100);
+        $('tttMeta').innerHTML='到達時の Ce ＝ '+HYP[simHyp].name+' <b>'+simTTT.ceP.toFixed(2)+'</b> '+HYP[simHyp].unit+' ／ '+OP[simOp].name+' <b>'+simTTT.ceR.toFixed(2)+'</b> '+OP[simOp].unit+(pm==='greco'?' ／ 予測BIS <b>'+Math.round(eleveldBIS(simTTT.ceP,simAge))+'</b>':''); }
+      else { var last=simData[simData.length-1]; var pLast=Math.round(curProb(last.ceP,last.ceR)*100);
         $('tttBig').classList.add('miss'); $('tttBig').textContent='この設定では '+simTmax+'分以内に未到達';
-        $('tttMeta').innerHTML=simTmax+'分時点で '+pLast+'%（Ce プロポ <b>'+last.ceP.toFixed(2)+'</b> / レミ <b>'+last.ceR.toFixed(2)+'</b>）。投与量や目標％を見直してください。'; }
+        $('tttMeta').innerHTML=simTmax+'分時点で '+pLast+'%（'+HYP[simHyp].short+' <b>'+last.ceP.toFixed(2)+'</b> / '+OP[simOp].short+' <b>'+last.ceR.toFixed(2)+'</b>）。投与量や目標％を見直してください。'; }
     } else { simTTT=null; }
     if(+$('simT').value>simTmax*60)$('simT').value=simTmax*60;
     simScrub();
@@ -632,13 +710,15 @@
   function atTime(t){ if(!simData.length)return {ceP:0,ceR:0}; var idx=Math.round(t*60); idx=Math.max(0,Math.min(simData.length-1,idx)); return simData[idx]; }
   function simScrub(){
     var t=scrubT(); $('simTV').textContent=fmtTime(t);
-    var pt=atTime(t), v=isValidatedPair();
+    var pt=atTime(t), pm=pairModel();
     $('nowCp').textContent=pt.ceP.toFixed(2); $('nowCr').textContent=pt.ceR.toFixed(2);
-    if(v){ var e=EP[simSel]; var pr=Math.round(prob(pt.ceP,pt.ceR,e)*100); $('nowP').textContent=pr+'%'; $('nowP').style.color=e.color; }
-    var dk=HYP[simHyp].depth;
+    if(pm){ var e=curEP(); var pr=Math.round(curProb(pt.ceP,pt.ceR)*100); $('nowP').textContent=pr+'%'; $('nowP').style.color=e.color; }
+    var dk=depthKind();
     if(dk==='bis'){ var b=Math.round(eleveldBIS(pt.ceP,simAge)); $('nowBIS').textContent=b; $('nowBIS').style.color=bisColor(b); }
-    else if(dk==='loc'){ var l=Math.round(100*remimazLOC(pt.ceP)); $('nowBIS').textContent=l+'%'; $('nowBIS').style.color='var(--teal)'; }
-    if(v){ drawSurface($('cvSim'),EP[simSel],{traj:simData,target:+$('simTarget').value,cp:pt.ceP,cr:pt.ceR}); }
+    else if(dk==='loc'){ $('nowBIS').textContent=Math.round(100*remimazLOC(pt.ceP))+'%'; $('nowBIS').style.color='var(--teal)'; }
+    else if(dk==='vloc'){ $('nowBIS').textContent=Math.round(100*vLOC(pt.ceP*1000,pt.ceR))+'%'; $('nowBIS').style.color='var(--teal)'; }
+    if(pm==='greco'){ drawSurface($('cvSim'),EP[simSel],{traj:simData,target:+$('simTarget').value,cp:pt.ceP,cr:pt.ceR}); }
+    else if(pm==='vellinga'){ drawSurfV($('cvSim'),VEP[simVSel],{traj:simData,target:+$('simTarget').value,cp:pt.ceP,cr:pt.ceR}); }
     drawTC();
   }
 
@@ -653,18 +733,18 @@
     for(var g=0;g<=4;g++){var y=padT.t+ph*g/4;c.beginPath();c.moveTo(padT.l,y);c.lineTo(padT.l+pw,y);c.stroke();}
     c.strokeStyle='#26344f';c.strokeRect(padT.l,padT.t,pw,ph);
     if(simData.length>1){
-      var v=isValidatedPair(), dk=HYP[simHyp].depth, hcmax=HYP[simHyp].cmax, ocmax=OP[simOp].cmax;
+      var pm=pairModel(), dk=depthKind(), hcmax=HYP[simHyp].cmax, ocmax=OP[simOp].cmax;
       function line(col,w,fn){ c.strokeStyle=col;c.lineWidth=w;c.beginPath(); for(var i=0;i<simData.length;i++){var X=xOf(simData[i].t),Y=yP(fn(simData[i]));if(i===0)c.moveTo(X,Y);else c.lineTo(X,Y);} c.stroke(); }
-      // depth indicator (propofol=BIS w/ 40-60 band; remimazolam=P(LOC))
+      // depth indicator (propofol=BIS w/ 40-60 band; remimazolam=P(意識消失))
       if(dk==='bis'){ c.fillStyle='rgba(52,211,153,.10)'; c.fillRect(padT.l,yP(0.6),pw,yP(0.4)-yP(0.6));
         line('#f5a524',1.8,function(d){return Math.min(1,eleveldBIS(d.ceP,simAge)/100);}); }
       else if(dk==='loc'){ line('#f5a524',1.8,function(d){return remimazLOC(d.ceP);}); }
+      else if(dk==='vloc'){ line('#f5a524',1.8,function(d){return vLOC(d.ceP*1000,d.ceR);}); }
       // Ce traces normalized to each drug's display scale
       line('#2dd4bf',2,function(d){return Math.min(1,d.ceP/hcmax);});
       line('#a78bfa',2,function(d){return Math.min(1,d.ceR/ocmax);});
-      // no-response% + target + TTT (validated pair only)
-      if(v){ var e=EP[simSel];
-        line('#e9eef7',2.2,function(d){return prob(d.ceP,d.ceR,e);});
+      // no-response% + target + TTT (validated pairs)
+      if(pm){ line('#e9eef7',2.2,function(d){return curProb(d.ceP,d.ceR);});
         var T=+$('simTarget').value; c.strokeStyle='rgba(233,238,247,.4)';c.lineWidth=1;c.setLineDash([4,3]);
         c.beginPath();c.moveTo(padT.l,yP(T));c.lineTo(padT.l+pw,yP(T));c.stroke();c.setLineDash([]);
         if(simTTT){ var Xt=xOf(simTTT.t); c.strokeStyle='#34d399';c.lineWidth=1.4;c.setLineDash([3,3]);
@@ -692,7 +772,24 @@
 
   render(); simRun();
 
-  if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+  /* ===================== version & manual update ===================== */
+  var APP_VERSION='1.5';
+  var APP_DATE='2026-06-28';
+  (function(){ var v=$('appVer'); if(v) v.textContent='バージョン '+APP_VERSION+'（'+APP_DATE+'）'; })();
+  function forceUpdate(){
+    var b=$('updBtn'); if(b){ b.textContent='更新中…'; b.disabled=true; }
+    var p=Promise.resolve();
+    if('serviceWorker' in navigator){ p=p.then(function(){return navigator.serviceWorker.getRegistrations();})
+      .then(function(rs){return Promise.all(rs.map(function(r){return r.update();}));}); }
+    if(window.caches){ p=p.then(function(){return caches.keys();})
+      .then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k);}));}); }
+    p.then(function(){ location.reload(); }).catch(function(){ location.reload(); });
+  }
+  if('serviceWorker' in navigator){
+    var swRefreshing=false;
+    navigator.serviceWorker.addEventListener('controllerchange',function(){ if(swRefreshing)return; swRefreshing=true; location.reload(); });
+    window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').then(function(reg){ if(reg&&reg.update)reg.update(); }).catch(function(){}); });
+  }
 </script>
 </body>
 </html>
